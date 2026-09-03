@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Node / frontend build output
+node_modules/
+frontend/dist/
+backend/app/static/*
+
+# Runtime data
+backend/data/*.db
+var/
+
+# Env / secrets
+.env
+*.local
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

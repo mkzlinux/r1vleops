@@ -1,0 +1,4 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+# Optional real-LLM brain (uncomment + set OPENAI_API_KEY):
+# openai>=1.0
