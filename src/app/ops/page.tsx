@@ -1,5 +1,5 @@
-import { GodotHost } from "@/components/ops/GodotHost";
+import { Overview } from "@/components/ops/Overview";
 
-export default function OpsCampusPage() {
-  return <GodotHost />;
+export default function OpsOverviewPage() {
+  return <Overview />;
 }

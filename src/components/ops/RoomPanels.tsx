@@ -1,0 +1,177 @@
+"use client";
+
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
+import { DEPARTMENTS } from "@/lib/catalog";
+import { getRepository } from "@/lib/data";
+import { formatBytes } from "@/lib/files";
+import { formatUsd, orderTotals, stageLabel, whatsappLink, type OrderAdvance } from "@/lib/orders";
+import type { ClientRow } from "@/lib/opsStats";
+import { STAGES, type NewWorkerInput, type Order, type Service, type Stage, type Worker } from "@/lib/types";
+import { Bot, Close, Users, WhatsApp } from "../Icons";
+
+const QUICK: readonly { stage: Stage; progress: number; label: string; note: string }[] = [
+  { stage: "deposit_confirmed", progress: 5, label: "Confirm deposit", note: "Deposit received. Work is scheduled." },
+  { stage: "in_progress", progress: 15, label: "Start work", note: "Work has started." },
+  { stage: "in_review", progress: 85, label: "Send for review", note: "First delivery sent for your review." },
+  { stage: "delivered", progress: 100, label: "Mark delivered", note: "Final files delivered. Balance due." },
+  { stage: "closed", progress: 100, label: "Balance paid · close", note: "Balance received. Thank you!" },
+];
+
+interface DrawerProps {
+  readonly order: Order;
+  readonly workers: readonly Worker[];
+  readonly onClose: () => void;
+  readonly onAdvance: (change: OrderAdvance) => Promise<string | null>;
+  readonly onAssign: (workerId: string | null) => Promise<string | null>;
+}
+
+export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign }: DrawerProps) {
+  const [stage, setStage] = useState<Stage>(order.stage);
+  const [progress, setProgress] = useState(order.progress);
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+  const totals = orderTotals(order);
+  const apply = async (change: OrderAdvance) => {
+    setIsBusy(true);
+    const err = await onAdvance(change);
+    setError(err);
+    setIsBusy(false);
+    if (!err) setNote("");
+  };
+  const openFile = async (key: string) => {
+    const att = order.attachments?.find((a) => a.key === key);
+    const url = att ? await getRepository().openAttachment(att) : null;
+    if (url) window.open(url, "_blank", "noopener");
+    else setError("That file isn't available in this browser.");
+  };
+  const trackUrl = typeof window !== "undefined" ? `${window.location.origin}/track?code=${order.trackingCode}` : "";
+  const msg = `Hi ${order.client.name.split(" ")[0]}, update on your R1VLE project (${order.trackingCode}): ${stageLabel(order.stage)}, ${order.progress}% complete. Track it here: ${trackUrl}`;
+
+  return (
+    <aside className="drawer glass-panel" aria-label={`Order ${order.invoiceNo}`}>
+      <header>
+        <span className={`stage-pill ${order.stage}`}>{stageLabel(order.stage)}</span>
+        <button type="button" onClick={onClose} aria-label="Close order"><Close size={16} /></button>
+      </header>
+      <h2>{order.lines.map((l) => (l.qty > 1 ? `${l.qty} × ${l.name}` : l.name)).join(" + ")}</h2>
+      <p className="dim">{order.client.name}{order.client.company ? ` · ${order.client.company}` : ""} · <span className="mono">{order.trackingCode}</span> · {order.invoiceNo}</p>
+      <div className="dr-kpis">
+        <div><b>{formatUsd(totals.total)}</b><small>Contract</small></div>
+        <div><b>{formatUsd(totals.deposit)}</b><small>{order.depositPct}% deposit</small></div>
+        <div><b>{order.progress}%</b><small>Progress</small></div>
+      </div>
+      {order.brief && <p className="dr-brief">{order.brief}</p>}
+      {(order.client.email || order.client.whatsapp) && <p className="dim">{order.client.email} · {order.client.whatsapp}</p>}
+      {(order.attachments?.length ?? 0) > 0 && (
+        <div className="dr-files">
+          <small>Client files</small>
+          {order.attachments?.map((a) => <button key={a.key} type="button" onClick={() => openFile(a.key)}>{a.name}<span>{formatBytes(a.size)}</span></button>)}
+        </div>
+      )}
+      <div className="quick">
+        {QUICK.map((q) => <button key={q.stage} type="button" disabled={isBusy} onClick={() => apply({ stage: q.stage, progress: Math.max(q.progress, order.progress), note: q.note })}>{q.label}</button>)}
+      </div>
+      <div className="dr-row">
+        <label>Stage
+          <select className="g-input" value={stage} onChange={(e) => setStage(e.target.value as Stage)}>
+            {STAGES.map((s) => <option key={s} value={s}>{stageLabel(s)}</option>)}
+          </select>
+        </label>
+        <label>Assigned to
+          <select className="g-input" value={order.assignedWorkerId ?? ""} onChange={async (e) => setError(await onAssign(e.target.value || null))}>
+            <option value="">Unassigned</option>
+            {workers.map((w) => <option key={w.id} value={w.id}>{w.name} · {w.kind === "ai" ? "AI" : "Human"}</option>)}
+          </select>
+        </label>
+      </div>
+      <label className="dr-range">Progress · {progress}%
+        <input type="range" min={0} max={100} step={5} value={progress} onChange={(e) => setProgress(Number(e.target.value))} />
+      </label>
+      <textarea className="g-input" placeholder="Update note: the client sees this on their tracking page." maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} />
+      {error && <p className="g-error" role="alert">{error}</p>}
+      <button type="button" className="btn btn-lime" style={{ justifyContent: "center" }} disabled={isBusy} onClick={() => apply({ stage, progress, note })}>{isBusy ? "Saving…" : "Post update"}</button>
+      <div className="quick">
+        {order.client.whatsapp && <a href={whatsappLink(order.client.whatsapp, msg)} target="_blank" rel="noopener noreferrer"><WhatsApp size={14} /> Message client</a>}
+        <Link href={`/invoice/${order.trackingCode}`} target="_blank">Invoice</Link>
+        <Link href={`/track?code=${order.trackingCode}`} target="_blank">Client view</Link>
+      </div>
+    </aside>
+  );
+}
+
+export function ClientsList({ clients }: { clients: readonly ClientRow[] }) {
+  if (clients.length === 0) return <p className="g-empty">No clients yet.</p>;
+  return (
+    <>
+      {clients.map((c) => (
+        <div key={c.key} className="g-row">
+          <div><b>{c.name}</b><small>{c.company || "Individual"} · {c.orders} order{c.orders === 1 ? "" : "s"}</small></div>
+          <div className="g-row-end"><b>{formatUsd(c.lifetimeUsd)}</b>{c.whatsapp && <a href={whatsappLink(c.whatsapp, `Hi ${c.name.split(" ")[0]}, it's R1VLE.`)} target="_blank" rel="noopener noreferrer">WhatsApp</a>}</div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+const STATUS_COLOR: Record<Worker["status"], string> = { online: "#c8f53b", busy: "#ff9f3d", idle: "#9aa0a6", invited: "#8e9bff" };
+const DEPT_OPTIONS: readonly { id: Worker["departmentId"]; name: string }[] = [...DEPARTMENTS.map((d) => ({ id: d.id, name: d.name })), { id: "hq", name: "Founder HQ" }];
+
+export function TeamList({ workers, defaultDept, onHire }: { workers: readonly Worker[]; defaultDept: Worker["departmentId"]; onHire: (i: NewWorkerInput) => Promise<string | null> }) {
+  const [form, setForm] = useState<NewWorkerInput>({ name: "", role: "", departmentId: defaultDept, email: "" });
+  const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const err = await onHire(form);
+    setError(err);
+    if (!err) { setForm({ name: "", role: "", departmentId: defaultDept, email: "" }); setIsOpen(false); }
+  };
+  return (
+    <>
+      {workers.map((w) => (
+        <div key={w.id} className="g-row">
+          <span className="g-av">{w.kind === "ai" ? <Bot size={18} /> : <Users size={18} />}</span>
+          <div className="g-grow"><b>{w.name}</b><small>{w.role}</small></div>
+          <span className="g-status" style={{ "--c": STATUS_COLOR[w.status] } as React.CSSProperties}>{w.status}</span>
+        </div>
+      ))}
+      {!isOpen ? (
+        <button type="button" className="btn btn-lime" style={{ justifyContent: "center" }} onClick={() => setIsOpen(true)}>+ Employ someone</button>
+      ) : (
+        <form className="g-form" onSubmit={submit}>
+          <b>New employee</b>
+          <input className="g-input" placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required aria-label="Full name" />
+          <input className="g-input" placeholder="Role, e.g. Motion designer" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} required aria-label="Role" />
+          <div className="dr-row">
+            <select className="g-input" value={form.departmentId} onChange={(e) => setForm({ ...form, departmentId: e.target.value as Worker["departmentId"] })} aria-label="Department">
+              {DEPT_OPTIONS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <input className="g-input" type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} aria-label="Email" />
+          </div>
+          <small className="dim">Saved as &ldquo;invited&rdquo;. Their own room login comes in a later release.</small>
+          {error && <p className="g-error" role="alert">{error}</p>}
+          <div className="quick"><button type="submit">Save employee</button><button type="button" onClick={() => setIsOpen(false)}>Cancel</button></div>
+        </form>
+      )}
+    </>
+  );
+}
+
+export function PriceList({ services, onSave }: { services: readonly Service[]; onSave: (id: string, price: number) => Promise<string | null> }) {
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<Record<string, string>>({});
+  return (
+    <>
+      <p className="dim">Changes show on the public pricing page and apply to new orders.</p>
+      {services.map((s) => (
+        <div key={s.id} className="g-row">
+          <div className="g-grow"><b>{s.name}</b><small>{{ from: "Starting at", monthly: "Per month", each: "Per piece", fixed: "Fixed" }[s.unit]} · ~{s.deliveryDays} days{status[s.id] ? ` · ${status[s.id]}` : ""}</small></div>
+          <input className="g-input price" inputMode="decimal" aria-label={`Price for ${s.name}`} value={drafts[s.id] ?? String(s.priceUsd)} onChange={(e) => setDrafts({ ...drafts, [s.id]: e.target.value })} />
+          <div className="quick"><button type="button" onClick={async () => { const err = await onSave(s.id, Number(drafts[s.id] ?? s.priceUsd)); setStatus({ ...status, [s.id]: err ?? "Saved" }); }}>Save</button></div>
+        </div>
+      ))}
+    </>
+  );
+}

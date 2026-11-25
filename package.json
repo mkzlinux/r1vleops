@@ -8,9 +8,6 @@
     "start": "next start",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "godot:demo": "npx -y tsx@4.20.6 scripts/gen-godot-demo.ts",
-    "godot:export": "bash scripts/export-godot.sh",
-    "godot:test": "bash scripts/test-godot.sh",
     "seed:sql": "npx -y tsx@4.20.6 scripts/gen-seed.ts"
   },
   "dependencies": {
