@@ -1,4 +1,4 @@
-import { COMPANY } from "./catalog";
+import { COMPANY, maxQtyFor } from "./catalog";
 import type { NewOrderInput, Order, OrderLine, ProjectUpdate, Service, Stage } from "./types";
 
 /** Alphabet without 0/O/1/I to keep codes readable over WhatsApp or phone. */
@@ -79,7 +79,9 @@ export function validateNewOrder(input: NewOrderInput): string[] {
   if (client.whatsapp.replace(/\D/g, "").length < MIN_PHONE_DIGITS) {
     errors.push("Please enter a WhatsApp number with country code.");
   }
-  if (input.serviceIds.length === 0) errors.push("Pick at least one service.");
+  if (input.items.length === 0) errors.push("Pick at least one service.");
+  if (input.items.length > 30) errors.push("Too many different items in one order (30 max).");
+  if (input.items.some((i) => !Number.isInteger(i.qty) || i.qty < 1)) errors.push("Every item needs a quantity of at least 1.");
   if (input.brief.length > 4000) errors.push("Project brief is too long (4000 characters max).");
   return errors;
 }
@@ -92,14 +94,15 @@ export interface BuildOrderDeps {
 }
 
 export function buildOrder(input: NewOrderInput, deps: BuildOrderDeps): Order {
-  const picked = input.serviceIds.map((id) => {
-    const svc = deps.services.find((s) => s.id === id);
-    if (!svc) throw new Error(`Unknown service: ${id}`);
-    return svc;
+  const picked = input.items.map((item) => {
+    const svc = deps.services.find((s) => s.id === item.serviceId);
+    if (!svc) throw new Error(`Unknown service: ${item.serviceId}`);
+    const qty = Math.min(maxQtyFor(svc), Math.max(1, Math.floor(item.qty)));
+    return { svc, qty };
   });
   if (picked.length === 0) throw new Error("An order needs at least one service.");
 
-  const lines: OrderLine[] = picked.map((s) => ({ serviceId: s.id, name: s.name, qty: 1, rateUsd: s.priceUsd }));
+  const lines: OrderLine[] = picked.map(({ svc, qty }) => ({ serviceId: svc.id, name: svc.name, qty, rateUsd: svc.priceUsd }));
   const at = deps.now.toISOString();
   const invoiceNo = nextInvoiceNo(deps.existingInvoiceNos, deps.now.getFullYear());
   const firstUpdate: ProjectUpdate = {
@@ -114,7 +117,7 @@ export function buildOrder(input: NewOrderInput, deps: BuildOrderDeps): Order {
     trackingCode: generateTrackingCode(deps.random),
     invoiceNo,
     createdAt: at,
-    departmentId: picked[0].departmentId,
+    departmentId: picked[0].svc.departmentId,
     client: {
       name: input.client.name.trim(),
       company: input.client.company.trim(),

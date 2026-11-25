@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import "@/components/landing/landing.css";
+import "@/components/site/site.css";
 import "@/components/client/client.css";
 import { ArrowLeft } from "@/components/Icons";
-import { Brand } from "@/components/landing/Nav";
+import { Brand } from "@/components/site/SiteChrome";
 import { TrackView } from "@/components/client/TrackView";
-import { WhatsAppFab } from "@/components/landing/TrackAndFooter";
+import { WhatsAppFab } from "@/components/site/SiteChrome";
 
 function TrackFromUrl() {
   const code = useSearchParams().get("code");

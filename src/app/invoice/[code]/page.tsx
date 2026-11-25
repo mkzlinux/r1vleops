@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import "@/components/landing/landing.css";
+import "@/components/site/site.css";
 import "@/components/client/client.css";
 import { ArrowLeft } from "@/components/Icons";
-import { Brand } from "@/components/landing/Nav";
+import { Brand } from "@/components/site/SiteChrome";
 import { InvoiceView } from "@/components/client/InvoiceView";
 import { useOrderByCode } from "@/components/client/useOrderByCode";
 

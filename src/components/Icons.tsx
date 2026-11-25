@@ -22,6 +22,14 @@ export const Plus = (p: IconProps) => <svg {...base(p)}><path d="M12 5v14M5 12h1
 export const Close = (p: IconProps) => <svg {...base(p)}><path d="M6 6l12 12M18 6 6 18" /></svg>;
 export const Leaf = (p: IconProps) => <svg {...base(p)}><path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15" /><path d="M5 19c3-4 6-7 10-9" /></svg>;
 
+export const BucketIcon = (p: IconProps) => <svg {...base(p)}><path d="M4 8h16l-1.6 11.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 8Z" /><path d="M8 8a4 4 0 0 1 8 0" /><path d="M9 13h6" /></svg>;
+export const Minus = (p: IconProps) => <svg {...base(p)}><path d="M5 12h14" /></svg>;
+export const Trash = (p: IconProps) => <svg {...base(p)}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>;
+export const Upload = (p: IconProps) => <svg {...base(p)}><path d="M12 16V4m-5 5 5-5 5 5" /><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></svg>;
+export const Clock = (p: IconProps) => <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>;
+export const Sparkle = (p: IconProps) => <svg {...base(p)} fill="currentColor" stroke="none"><path d="M12 2c.6 4.8 2.6 7.4 8 8-5.4.6-7.4 3.2-8 8-.6-4.8-2.6-7.4-8-8 5.4-.6 7.4-3.2 8-8Z" /></svg>;
+export const Pen = (p: IconProps) => <svg {...base(p)}><path d="M4 20l4-1 11-11-3-3L5 16l-1 4Z" /><path d="M14 6l3 3" /></svg>;
+
 export function WhatsApp({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

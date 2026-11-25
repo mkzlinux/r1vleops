@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createLocalRepository, memoryStore, type KeyValueStore } from "./localRepository";
 import type { R1vleRepository } from "./repository";
 import { createSupabaseRepository } from "./supabaseRepository";
+import { idbBlobStore } from "./idbBlobStore";
 
 export type { R1vleRepository } from "./repository";
 
@@ -36,6 +37,6 @@ function browserStore(): KeyValueStore {
 export function getRepository(): R1vleRepository {
   if (repo) return repo;
   const client = getSupabase();
-  repo = client ? createSupabaseRepository(client) : createLocalRepository(browserStore());
+  repo = client ? createSupabaseRepository(client) : createLocalRepository(browserStore(), () => new Date(), idbBlobStore());
   return repo;
 }

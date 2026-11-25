@@ -1,12 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { COMPANY } from "@/lib/catalog";
-import { DEFAULT_WA_MESSAGE, waLink } from "@/lib/config";
 import { normalizeTrackingCode } from "@/lib/orders";
-import { ArrowUpRight, WhatsApp } from "../Icons";
+import { ArrowUpRight } from "../Icons";
 
 export function TrackCta() {
   const router = useRouter();
@@ -33,32 +30,5 @@ export function TrackCta() {
         </div>
       </div>
     </section>
-  );
-}
-
-export function Footer() {
-  return (
-    <footer className="footer">
-      <div className="wrap">
-        <p className="footer-big" aria-hidden="true">R1VLE<span>.</span></p>
-        <div className="footer-row">
-          <span>{COMPANY.legalName} · {COMPANY.tagline}</span>
-          <nav aria-label="Footer">
-            <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
-            <a href={waLink(DEFAULT_WA_MESSAGE)} target="_blank" rel="noopener noreferrer">{COMPANY.phoneDisplay}</a>
-            <Link href="/track">Track</Link>
-            <Link href="/ops">Ops</Link>
-          </nav>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-export function WhatsAppFab() {
-  return (
-    <a className="wa-fab" href={waLink(DEFAULT_WA_MESSAGE)} target="_blank" rel="noopener noreferrer" aria-label="Chat with R1VLE on WhatsApp">
-      <WhatsApp size={28} />
-    </a>
   );
 }

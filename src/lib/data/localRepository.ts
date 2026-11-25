@@ -1,7 +1,8 @@
 import { SERVICES } from "../catalog";
 import { advanceOrder, buildOrder, isValidTrackingCode, normalizeTrackingCode, validateNewOrder } from "../orders";
 import type { OrderAdvance } from "../orders";
-import type { NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
+import { attachmentKey, validateFiles } from "../files";
+import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 import { SEED_WORKERS, seedOrders } from "./seed";
 
@@ -20,6 +21,17 @@ interface LocalState {
 
 const STATE_KEY = "r1vle-ops-state-v1";
 
+/** Binary storage for attachments (IndexedDB in the browser, a Map in tests). */
+export interface BlobStore {
+  put(key: string, blob: Blob): Promise<void>;
+  get(key: string): Promise<Blob | null>;
+}
+
+export function memoryBlobStore(): BlobStore {
+  const map = new Map<string, Blob>();
+  return { put: async (k, b) => void map.set(k, b), get: async (k) => map.get(k) ?? null };
+}
+
 export function memoryStore(): KeyValueStore {
   const map = new Map<string, string>();
   return { getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v) };
@@ -35,7 +47,11 @@ function isLocalState(value: unknown): value is LocalState {
   return v.version === 1 && Array.isArray(v.orders) && Array.isArray(v.workers) && typeof v.priceOverrides === "object";
 }
 
-export function createLocalRepository(store: KeyValueStore, now: () => Date = () => new Date()): R1vleRepository {
+export function createLocalRepository(
+  store: KeyValueStore,
+  now: () => Date = () => new Date(),
+  blobs: BlobStore = memoryBlobStore(),
+): R1vleRepository {
   const read = (): LocalState => {
     try {
       const raw = store.getItem(STATE_KEY);
@@ -89,6 +105,22 @@ export function createLocalRepository(store: KeyValueStore, now: () => Date = ()
       });
       write({ ...state, orders: [order, ...state.orders] });
       return order;
+    },
+    async attachFiles(order: Order, files: readonly File[]) {
+      if (files.length === 0) return order;
+      const problems = validateFiles(files);
+      if (problems.length > 0) throw new Error(problems.join(" "));
+      const attachments: Attachment[] = [];
+      for (const [i, file] of files.entries()) {
+        const key = attachmentKey(order.id, i, file.name);
+        await blobs.put(key, file);
+        attachments.push({ key, name: file.name, size: file.size, type: file.type });
+      }
+      return replaceOrder(order.id, (o) => ({ ...o, attachments: [...(o.attachments ?? []), ...attachments] }));
+    },
+    async openAttachment(attachment: Attachment) {
+      const blob = await blobs.get(attachment.key);
+      return blob ? URL.createObjectURL(blob) : null;
     },
     async findOrderByCode(code) {
       if (!isValidTrackingCode(code)) return null;

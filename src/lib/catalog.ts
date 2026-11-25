@@ -7,8 +7,27 @@ export const COMPANY = {
   email: "r1vle@pm.me",
   phoneDisplay: "+263 71 361 9305",
   depositPct: 50,
-  paymentOptions: [{ label: "Mobile Money (USD)", detail: "EcoCash USD / 0778 399 642" }],
 } as const;
+
+export type PaymentMethodStatus = "soon" | "on-request";
+
+export interface PaymentMethod {
+  readonly id: string;
+  readonly label: string;
+  readonly detail: string;
+  readonly status: PaymentMethodStatus;
+}
+
+/** How clients will pay. Online checkout for these is planned; until then deposits are arranged on WhatsApp. */
+export const PAYMENT_METHODS: readonly PaymentMethod[] = [
+  { id: "ecocash", label: "EcoCash", detail: "Local mobile money", status: "soon" },
+  { id: "paypal", label: "PayPal", detail: "International cards & PayPal", status: "soon" },
+  { id: "usdc", label: "USDC", detail: "Stablecoin on-chain payment", status: "soon" },
+  { id: "bank", label: "Bank transfer", detail: "Details shared on WhatsApp", status: "on-request" },
+];
+
+export const PAYMENT_NOTE =
+  "Online payments (EcoCash, PayPal, USDC) are coming soon. For now, message us on WhatsApp and we'll send deposit details for your invoice.";
 
 export const DEPARTMENTS: readonly Department[] = [
   {
@@ -85,6 +104,48 @@ export const SERVICES: readonly Service[] = [
     includes: ["3 concepts", "Logo suite", "Brand guide PDF", "Social kit"],
   },
   {
+    id: "cre-logo", departmentId: "creative", name: "Logo Design",
+    summary: "A distinctive logo with variations for light, dark and small sizes.",
+    priceUsd: 120, unit: "fixed", deliveryDays: 5,
+    includes: ["2 concepts", "Colour + mono versions", "Source files"],
+  },
+  {
+    id: "cre-flyer", departmentId: "creative", name: "Flyer Design",
+    summary: "Event, promo or product flyer, print-ready and social-ready.",
+    priceUsd: 35, unit: "each", deliveryDays: 2,
+    includes: ["Print PDF + PNG", "Instagram/WhatsApp sizes", "2 revisions"],
+  },
+  {
+    id: "cre-poster", departmentId: "creative", name: "Poster Design",
+    summary: "Large-format poster for events, launches or campaigns.",
+    priceUsd: 45, unit: "each", deliveryDays: 3,
+    includes: ["A3/A2 print files", "Digital version", "2 revisions"],
+  },
+  {
+    id: "cre-social", departmentId: "creative", name: "Social Media Post",
+    summary: "Single branded post or carousel slide for any platform.",
+    priceUsd: 15, unit: "each", deliveryDays: 1,
+    includes: ["Feed + story sizes", "Caption suggestion", "1 revision"],
+  },
+  {
+    id: "cre-card", departmentId: "creative", name: "Business Card",
+    summary: "Two-sided business card design, ready for the printer.",
+    priceUsd: 25, unit: "each", deliveryDays: 2,
+    includes: ["Front + back", "Print-ready PDF", "QR code option"],
+  },
+  {
+    id: "cre-brochure", departmentId: "creative", name: "Menu / Brochure",
+    summary: "Multi-panel menu, brochure or company profile layout.",
+    priceUsd: 70, unit: "each", deliveryDays: 4,
+    includes: ["Up to 4 panels", "Print + digital", "2 revisions"],
+  },
+  {
+    id: "cre-banner", departmentId: "creative", name: "Banner / Billboard",
+    summary: "Roll-up banner, billboard or shopfront signage artwork.",
+    priceUsd: 60, unit: "each", deliveryDays: 3,
+    includes: ["Large-format files", "Mock-up preview", "2 revisions"],
+  },
+  {
     id: "cre-motion", departmentId: "creative", name: "Motion Graphics (30s)",
     summary: "Animated explainer, product promo or logo reveal up to 30 seconds.",
     priceUsd: 250, unit: "fixed", deliveryDays: 7,
@@ -106,6 +167,13 @@ export function departmentById(id: DepartmentId): Department {
 
 export function servicesFor(id: DepartmentId, services: readonly Service[] = SERVICES): Service[] {
   return services.filter((s) => s.departmentId === id);
+}
+
+/** Max quantity per bucket line: packs are one-offs, retainers are months, "each" items are pieces. */
+export function maxQtyFor(service: Pick<Service, "unit">): number {
+  if (service.unit === "each") return 50;
+  if (service.unit === "monthly") return 12;
+  return 1;
 }
 
 export function serviceById(id: string, services: readonly Service[] = SERVICES): Service | undefined {

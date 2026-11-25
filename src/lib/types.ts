@@ -8,7 +8,8 @@ export interface Department {
   readonly accent: string;
 }
 
-export type PriceUnit = "fixed" | "from" | "monthly";
+/** fixed/from: one per order · monthly: qty = months · each: qty = number of pieces (flyers, posters…) */
+export type PriceUnit = "fixed" | "from" | "monthly" | "each";
 
 export interface Service {
   readonly id: string;
@@ -53,6 +54,14 @@ export interface Client {
   readonly whatsapp: string;
 }
 
+/** A file the client attached to an order (logo, images, brief). Bytes live in file storage, not on the order. */
+export interface Attachment {
+  readonly key: string;
+  readonly name: string;
+  readonly size: number;
+  readonly type: string;
+}
+
 export interface Order {
   readonly id: string;
   /** Public tracking code given to the client, e.g. R1V-7KQ2-9XAM */
@@ -68,6 +77,7 @@ export interface Order {
   readonly progress: number;
   readonly assignedWorkerId: string | null;
   readonly updates: readonly ProjectUpdate[];
+  readonly attachments?: readonly Attachment[];
 }
 
 export type WorkerKind = "ai" | "human";
@@ -83,10 +93,15 @@ export interface Worker {
   readonly joinedAt: string;
 }
 
+export interface OrderItem {
+  readonly serviceId: string;
+  readonly qty: number;
+}
+
 export interface NewOrderInput {
   readonly client: Client;
   readonly brief: string;
-  readonly serviceIds: readonly string[];
+  readonly items: readonly OrderItem[];
 }
 
 export interface NewWorkerInput {

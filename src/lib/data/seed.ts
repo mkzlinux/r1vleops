@@ -25,9 +25,9 @@ function seededRandom(seed: number): () => number {
 export function seedOrders(): Order[] {
   const random = seededRandom(42);
   const nos: string[] = [];
-  const make = (serviceIds: string[], name: string, company: string, day: number): Order => {
+  const make = (serviceIds: readonly string[], name: string, company: string, day: number): Order => {
     const order = buildOrder(
-      { client: { name, company, email: `${name.split(" ")[0].toLowerCase()}@example.com`, whatsapp: "+263770000000" }, brief: "Demo order", serviceIds },
+      { client: { name, company, email: `${name.split(" ")[0].toLowerCase()}@example.com`, whatsapp: "+263770000000" }, brief: "Demo order", items: serviceIds.map((serviceId) => ({ serviceId, qty: 1 })) },
       { services: SERVICES, existingInvoiceNos: nos, now: new Date(Date.UTC(2026, 10, day)), random },
     );
     nos.push(order.invoiceNo);
@@ -40,7 +40,7 @@ export function seedOrders(): Order[] {
   const ai = make(["int-ai"], "Tatenda Banda", "Sunrise Clinics", 22);
 
   return [
-    { ...advanceOrder(advanceOrder(audit, { stage: "deposit_confirmed", progress: 5, note: "Deposit received via EcoCash." }, new Date(Date.UTC(2026, 10, 13))), { stage: "in_progress", progress: 60, note: "Manual testing of auth flows underway." }, new Date(Date.UTC(2026, 10, 20))), assignedWorkerId: "ai-sentinel" },
+    { ...advanceOrder(advanceOrder(audit, { stage: "deposit_confirmed", progress: 5, note: "Deposit received." }, new Date(Date.UTC(2026, 10, 13))), { stage: "in_progress", progress: 60, note: "Manual testing of auth flows underway." }, new Date(Date.UTC(2026, 10, 20))), assignedWorkerId: "ai-sentinel" },
     { ...advanceOrder(advanceOrder(app, { stage: "deposit_confirmed", progress: 5, note: "Deposit received." }, new Date(Date.UTC(2026, 10, 16))), { stage: "in_progress", progress: 35, note: "Design system done, building dashboard." }, new Date(Date.UTC(2026, 10, 23))), assignedWorkerId: "ai-atlas" },
     { ...advanceOrder(advanceOrder(brand, { stage: "deposit_confirmed", progress: 5, note: "Deposit received." }, new Date(Date.UTC(2026, 10, 19))), { stage: "in_review", progress: 85, note: "Three logo concepts sent for review." }, new Date(Date.UTC(2026, 10, 24))), assignedWorkerId: "ai-muse" },
     ai,

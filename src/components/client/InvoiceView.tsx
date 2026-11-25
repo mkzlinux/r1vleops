@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { COMPANY, departmentById } from "@/lib/catalog";
+import { COMPANY, PAYMENT_METHODS, PAYMENT_NOTE, departmentById } from "@/lib/catalog";
+import { formatBytes } from "@/lib/files";
 import { waLink } from "@/lib/config";
 import { formatUsd, orderTotals, stageLabel } from "@/lib/orders";
 import type { Order } from "@/lib/types";
@@ -16,18 +17,19 @@ export function InvoiceView({ order, isNew }: { order: Order; isNew: boolean }) 
   const totals = orderTotals(order);
   const dept = departmentById(order.departmentId);
   const isPaidUp = order.stage === "closed";
-  const proofMsg = `Hi R1VLE, here is my proof of payment for invoice ${order.invoiceNo} (code ${order.trackingCode}). Deposit: ${formatUsd(totals.deposit)}.`;
+  const payMsg = `Hi R1VLE, please send deposit payment details for invoice ${order.invoiceNo} (code ${order.trackingCode}). Deposit: ${formatUsd(totals.deposit)}.`;
+  const attachments = order.attachments ?? [];
 
   return (
     <>
       <div className="wrap inv-bar no-print">
         <div>
           {isNew && <p style={{ margin: 0, fontWeight: 700 }}>Order placed. Save your tracking code: <span className="mono">{order.trackingCode}</span></p>}
-          <p style={{ margin: 0, color: "var(--mute)", fontSize: 14 }}>Pay the deposit, then send proof on WhatsApp. Work starts once it&rsquo;s confirmed.</p>
+          <p style={{ margin: 0, color: "var(--mute)", fontSize: 14 }}>Ask us for deposit details on WhatsApp. Work starts once your 50% deposit is confirmed.</p>
         </div>
         <div className="tools">
           <button type="button" className="btn btn-light btn-plain" onClick={() => window.print()}><Printer size={16} />&nbsp;Print / PDF</button>
-          <a className="btn btn-wa" href={waLink(proofMsg)} target="_blank" rel="noopener noreferrer"><WhatsApp size={18} /> Send proof of payment</a>
+          <a className="btn btn-wa" href={waLink(payMsg)} target="_blank" rel="noopener noreferrer"><WhatsApp size={18} /> Get deposit details</a>
           <Link className="btn btn-dark" href={`/track?code=${order.trackingCode}`}><span>Track</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
         </div>
       </div>
@@ -38,7 +40,8 @@ export function InvoiceView({ order, isNew }: { order: Order; isNew: boolean }) 
           <span className="date">INVOICE {fmtDate(order.createdAt)}</span>
         </div>
         <header className="head">
-          <div className="logo">R1VLE<small>INFRASTRUCTURE BEHIND THE INVISIBLE</small></div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="inv-logo" src="/brand/r1vle-logo-black.png" alt="R1VLE — Infrastructure behind the invisible" width={900} height={275} />
           <div className="title">
             <h1>{isPaidUp ? "RECEIPT" : "INVOICE"}</h1>
             <div className="meta">No. {order.invoiceNo}</div>
@@ -83,14 +86,23 @@ export function InvoiceView({ order, isNew }: { order: Order; isNew: boolean }) 
             <p className="sub" style={{ marginTop: 8 }}>Status: {stageLabel(order.stage)}</p>
           </div>
           <div>
-            <p className="label">04 / Payment options</p>
-            {COMPANY.paymentOptions.map((p) => <div key={p.label}><p className="name" style={{ fontSize: 13 }}>{p.label}</p><p className="sub">{p.detail}</p></div>)}
-            <p className="sub" style={{ marginTop: 8 }}>Use your invoice number as the payment reference.</p>
+            <p className="label">04 / Payment</p>
+            <div className="pay-methods">
+              {PAYMENT_METHODS.map((m) => <span key={m.id}>{m.label}<em>{m.status === "soon" ? "soon" : "on request"}</em></span>)}
+            </div>
+            <p className="sub" style={{ marginTop: 8 }}>{PAYMENT_NOTE} Use your invoice number as the payment reference.</p>
           </div>
         </section>
 
+        {attachments.length > 0 && (
+          <section>
+            <p className="label">05 / Files received</p>
+            <ul className="inv-files">{attachments.map((a) => <li key={a.key}>{a.name}<span>{formatBytes(a.size)}</span></li>)}</ul>
+          </section>
+        )}
+
         <section style={{ borderBottom: 0 }}>
-          <p className="label">05 / Project tracking code</p>
+          <p className="label">{attachments.length > 0 ? "06" : "05"} / Project tracking code</p>
           <div className="code-box">
             <span className="c">{order.trackingCode}</span>
             <small>Track progress any time at r1vle · /track</small>

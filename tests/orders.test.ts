@@ -14,7 +14,7 @@ import { SERVICES } from "@/lib/catalog";
 import type { NewOrderInput } from "@/lib/types";
 
 const client = { name: "Tendai M", company: "Acme", email: "t@acme.co", whatsapp: "+263771234567" };
-const input: NewOrderInput = { client, brief: "Need a site", serviceIds: ["int-site", "cre-brand"] };
+const input: NewOrderInput = { client, brief: "Need a site", items: [{ serviceId: "int-site", qty: 1 }, { serviceId: "cre-brand", qty: 1 }] };
 const fixedRandom = () => 0.5;
 
 describe("tracking codes", () => {
@@ -64,16 +64,30 @@ describe("buildOrder", () => {
     expect(order.updates[0].note).toMatch(/invoice/i);
   });
 
+  test("keeps quantities for per-piece items and clamps one-off packs to 1", () => {
+    const order = buildOrder(
+      { client, brief: "", items: [{ serviceId: "cre-flyer", qty: 4 }, { serviceId: "int-site", qty: 3 }] },
+      { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom },
+    );
+    expect(order.lines.map((l) => l.qty)).toEqual([4, 1]);
+    expect(orderTotals(order).total).toBe(4 * 35 + 280);
+    expect(order.departmentId).toBe("creative");
+  });
+
+  test("rejects zero or fractional quantities", () => {
+    expect(validateNewOrder({ ...input, items: [{ serviceId: "cre-flyer", qty: 0 }] })).toEqual(expect.arrayContaining([expect.stringMatching(/quantity/i)]));
+  });
+
   test("throws for unknown services", () => {
     expect(() =>
-      buildOrder({ ...input, serviceIds: ["nope"] }, { services: SERVICES, existingInvoiceNos: [], now: new Date(), random: fixedRandom }),
+      buildOrder({ ...input, items: [{ serviceId: "nope", qty: 1 }] }, { services: SERVICES, existingInvoiceNos: [], now: new Date(), random: fixedRandom }),
     ).toThrow(/unknown service/i);
   });
 });
 
 describe("validateNewOrder", () => {
   test("returns errors for missing contact details and no services", () => {
-    const errors = validateNewOrder({ client: { name: "", company: "", email: "bad", whatsapp: "" }, brief: "", serviceIds: [] });
+    const errors = validateNewOrder({ client: { name: "", company: "", email: "bad", whatsapp: "" }, brief: "", items: [] });
     expect(errors).toEqual(expect.arrayContaining([
       expect.stringMatching(/name/i),
       expect.stringMatching(/email/i),

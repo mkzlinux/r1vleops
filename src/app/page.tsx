@@ -1,23 +1,25 @@
+import "@/components/site/site.css";
 import "@/components/landing/landing.css";
 import { Hero } from "@/components/landing/Hero";
-import { Nav } from "@/components/landing/Nav";
-import { Pricing } from "@/components/landing/Pricing";
-import { Departments, Process, ZiFarmChain } from "@/components/landing/Sections";
-import { Footer, TrackCta, WhatsAppFab } from "@/components/landing/TrackAndFooter";
+import { AboutBento, Departments, IdeaBanner, Marquee, Process, ZiFarmChain } from "@/components/landing/Sections";
+import { TrackCta } from "@/components/landing/TrackAndFooter";
+import { SiteFooter, SiteNav, WhatsAppFab } from "@/components/site/SiteChrome";
 
 export default function HomePage() {
   return (
     <>
-      <Nav />
+      <SiteNav />
       <main>
         <Hero />
+        <Marquee />
+        <AboutBento />
         <Departments />
         <ZiFarmChain />
         <Process />
-        <Pricing />
+        <IdeaBanner />
         <TrackCta />
       </main>
-      <Footer />
+      <SiteFooter />
       <WhatsAppFab />
     </>
   );

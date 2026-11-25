@@ -8,8 +8,15 @@ insert into public.services (id, department_id, name, summary, price_usd, unit, 
   ('int-fintech', 'intelligence', 'Fintech & Blockchain Integration', 'Payment rails, wallets, smart contracts, stablecoin and ledger systems.', 2500, 'from', 45, array['Architecture review','Smart contract / API build','Security review','Go-live support']::text[], 5),
   ('int-ai', 'intelligence', 'AI Agent & Automation', 'AI workers that answer clients, process documents or run workflows.', 600, 'from', 14, array['Workflow mapping','Agent build','WhatsApp / email channel','Usage dashboard']::text[], 6),
   ('cre-brand', 'creative', 'Brand Identity', 'Logo system, palette, type and guidelines ready for every surface.', 300, 'fixed', 10, array['3 concepts','Logo suite','Brand guide PDF','Social kit']::text[], 7),
-  ('cre-motion', 'creative', 'Motion Graphics (30s)', 'Animated explainer, product promo or logo reveal up to 30 seconds.', 250, 'fixed', 7, array['Script + storyboard','2 revision rounds','Social cut-downs']::text[], 8),
-  ('cre-cinematic', 'creative', 'Cinematic Production', '3D or live-action cinematic for launches, real estate or campaigns.', 700, 'from', 21, array['Concept + previs','3D / CGI render','Colour grade + sound','4K master']::text[], 9)
+  ('cre-logo', 'creative', 'Logo Design', 'A distinctive logo with variations for light, dark and small sizes.', 120, 'fixed', 5, array['2 concepts','Colour + mono versions','Source files']::text[], 8),
+  ('cre-flyer', 'creative', 'Flyer Design', 'Event, promo or product flyer, print-ready and social-ready.', 35, 'each', 2, array['Print PDF + PNG','Instagram/WhatsApp sizes','2 revisions']::text[], 9),
+  ('cre-poster', 'creative', 'Poster Design', 'Large-format poster for events, launches or campaigns.', 45, 'each', 3, array['A3/A2 print files','Digital version','2 revisions']::text[], 10),
+  ('cre-social', 'creative', 'Social Media Post', 'Single branded post or carousel slide for any platform.', 15, 'each', 1, array['Feed + story sizes','Caption suggestion','1 revision']::text[], 11),
+  ('cre-card', 'creative', 'Business Card', 'Two-sided business card design, ready for the printer.', 25, 'each', 2, array['Front + back','Print-ready PDF','QR code option']::text[], 12),
+  ('cre-brochure', 'creative', 'Menu / Brochure', 'Multi-panel menu, brochure or company profile layout.', 70, 'each', 4, array['Up to 4 panels','Print + digital','2 revisions']::text[], 13),
+  ('cre-banner', 'creative', 'Banner / Billboard', 'Roll-up banner, billboard or shopfront signage artwork.', 60, 'each', 3, array['Large-format files','Mock-up preview','2 revisions']::text[], 14),
+  ('cre-motion', 'creative', 'Motion Graphics (30s)', 'Animated explainer, product promo or logo reveal up to 30 seconds.', 250, 'fixed', 7, array['Script + storyboard','2 revision rounds','Social cut-downs']::text[], 15),
+  ('cre-cinematic', 'creative', 'Cinematic Production', '3D or live-action cinematic for launches, real estate or campaigns.', 700, 'from', 21, array['Concept + previs','3D / CGI render','Colour grade + sound','4K master']::text[], 16)
 on conflict (id) do nothing;
 
 insert into public.workers (id, kind, name, role, department_id, email, status) values

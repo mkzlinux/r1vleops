@@ -13,7 +13,7 @@ describe("local repository", () => {
 
   test("creates an order that can be found by its tracking code in any case", async () => {
     const repo = createLocalRepository(memoryStore());
-    const order = await repo.createOrder({ client, brief: "Pentest our API", serviceIds: ["sec-pentest"] });
+    const order = await repo.createOrder({ client, brief: "Pentest our API", items: [{ serviceId: "sec-pentest", qty: 1 }] });
     const found = await repo.findOrderByCode(order.trackingCode.toLowerCase());
     expect(found?.id).toBe(order.id);
     expect(found?.departmentId).toBe("security");
@@ -27,20 +27,20 @@ describe("local repository", () => {
 
   test("rejects invalid orders with readable errors", async () => {
     const repo = createLocalRepository(memoryStore());
-    await expect(repo.createOrder({ client: { ...client, email: "x" }, brief: "", serviceIds: ["sec-audit"] })).rejects.toThrow(/email/i);
+    await expect(repo.createOrder({ client: { ...client, email: "x" }, brief: "", items: [{ serviceId: "sec-audit", qty: 1 }] })).rejects.toThrow(/email/i);
   });
 
   test("issues sequential invoice numbers", async () => {
     const repo = createLocalRepository(memoryStore(), () => new Date("2026-12-01T10:00:00Z"));
-    const a = await repo.createOrder({ client, brief: "", serviceIds: ["sec-audit"] });
-    const b = await repo.createOrder({ client, brief: "", serviceIds: ["sec-audit"] });
+    const a = await repo.createOrder({ client, brief: "", items: [{ serviceId: "sec-audit", qty: 1 }] });
+    const b = await repo.createOrder({ client, brief: "", items: [{ serviceId: "sec-audit", qty: 1 }] });
     expect(Number(b.invoiceNo.slice(-3))).toBe(Number(a.invoiceNo.slice(-3)) + 1);
   });
 
   test("price overrides apply to new orders", async () => {
     const repo = createLocalRepository(memoryStore());
     await repo.updateServicePrice("sec-audit", 400);
-    const order = await repo.createOrder({ client, brief: "", serviceIds: ["sec-audit"] });
+    const order = await repo.createOrder({ client, brief: "", items: [{ serviceId: "sec-audit", qty: 1 }] });
     expect(order.lines[0].rateUsd).toBe(400);
     await expect(repo.updateServicePrice("sec-audit", -1)).rejects.toThrow();
   });
@@ -48,7 +48,7 @@ describe("local repository", () => {
   test("advances, assigns and persists orders", async () => {
     const store = memoryStore();
     const repo = createLocalRepository(store);
-    const order = await repo.createOrder({ client, brief: "", serviceIds: ["cre-motion"] });
+    const order = await repo.createOrder({ client, brief: "", items: [{ serviceId: "cre-motion", qty: 1 }] });
     await repo.advanceOrder(order.id, { stage: "in_progress", progress: 40, note: "Storyboard approved" });
     await repo.assignWorker(order.id, "ai-muse");
     const reloaded = await createLocalRepository(store).findOrderByCode(order.trackingCode);
@@ -64,6 +64,17 @@ describe("local repository", () => {
     expect(w.kind).toBe("human");
     expect(w.status).toBe("invited");
     await expect(repo.hireWorker({ name: "", role: "x", departmentId: "hq", email: "" })).rejects.toThrow();
+  });
+
+  test("stores attachments and records them on the order", async () => {
+    const repo = createLocalRepository(memoryStore());
+    const order = await repo.createOrder({ client, brief: "", items: [{ serviceId: "cre-flyer", qty: 2 }] });
+    const logo = new File(["png-bytes"], "logo.png", { type: "image/png" });
+    const updated = await repo.attachFiles(order, [logo]);
+    expect(updated.attachments).toEqual([{ key: `${order.id}/0-logo.png`, name: "logo.png", size: 9, type: "image/png" }]);
+    const reloaded = await repo.findOrderByCode(order.trackingCode);
+    expect(reloaded?.attachments).toHaveLength(1);
+    await expect(repo.attachFiles(order, [new File(["x"], "virus.exe")])).rejects.toThrow(/not supported/);
   });
 
   test("recovers from corrupted storage", async () => {

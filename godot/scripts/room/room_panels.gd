@@ -147,7 +147,7 @@ static func pricing(list: VBoxContainer, services: Array) -> void:
 		var info := OpsUI.vbox(2)
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.add_child(OpsUI.label(str(s.get("name", "")), 14))
-		var unit: String = {"from": "Starting at", "monthly": "Per month"}.get(s.get("unit", ""), "Fixed")
+		var unit: String = {"from": "Starting at", "monthly": "Per month", "each": "Per piece"}.get(s.get("unit", ""), "Fixed")
 		var note := OpsUI.muted("%s · ~%d days" % [unit, int(s.get("deliveryDays", 0))], 12)
 		info.add_child(note)
 		row.add_child(info)

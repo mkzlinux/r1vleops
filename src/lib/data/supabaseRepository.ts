@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { stageLabel, type OrderAdvance } from "../orders";
-import type { DepartmentId, NewOrderInput, NewWorkerInput, Order, PriceUnit, Service, Worker } from "../types";
+import { attachmentKey, validateFiles } from "../files";
+import type { Attachment, DepartmentId, NewOrderInput, NewWorkerInput, Order, PriceUnit, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 
 interface ServiceRow {
@@ -14,10 +15,11 @@ interface WorkerRow {
 interface OrderRow {
   id: string; tracking_code: string; invoice_no: string; created_at: string; department_id: DepartmentId;
   client: Order["client"]; brief: string; lines: Order["lines"]; deposit_pct: number; stage: Order["stage"];
-  progress: number; assigned_worker_id: string | null;
+  progress: number; assigned_worker_id: string | null; attachments: Attachment[] | null;
   order_updates: { at: string; stage: Order["stage"]; progress: number; note: string }[];
 }
 
+const FILES_BUCKET = "order-files";
 const ORDER_SELECT = "*, order_updates(at, stage, progress, note)";
 
 const toService = (r: ServiceRow): Service => ({
@@ -34,6 +36,7 @@ const toOrder = (r: OrderRow): Order => ({
   lines: r.lines.map((l) => ({ ...l, rateUsd: Number(l.rateUsd) })), depositPct: r.deposit_pct,
   stage: r.stage, progress: r.progress, assignedWorkerId: r.assigned_worker_id,
   updates: [...(r.order_updates ?? [])].sort((a, b) => a.at.localeCompare(b.at)),
+  attachments: r.attachments ?? [],
 });
 
 function fail(action: string, error: { message: string } | null): never {
@@ -62,10 +65,29 @@ export function createSupabaseRepository(db: SupabaseClient): R1vleRepository {
     },
     async createOrder(input: NewOrderInput) {
       const { data, error } = await db.rpc("create_order", {
-        p_client: input.client, p_brief: input.brief, p_service_ids: [...input.serviceIds],
+        p_client: input.client, p_brief: input.brief, p_items: input.items,
       });
       if (error || !data) fail("Could not place order", error);
       return data as Order;
+    },
+    async attachFiles(order: Order, files: readonly File[]) {
+      if (files.length === 0) return order;
+      const problems = validateFiles(files);
+      if (problems.length > 0) throw new Error(problems.join(" "));
+      const attachments: Attachment[] = [];
+      for (const [i, file] of files.entries()) {
+        const key = attachmentKey(order.id, i, file.name);
+        const { error } = await db.storage.from(FILES_BUCKET).upload(key, file, { contentType: file.type || undefined, upsert: false });
+        if (error) fail(`Could not upload ${file.name}`, error);
+        attachments.push({ key, name: file.name, size: file.size, type: file.type });
+      }
+      const { data, error } = await db.rpc("attach_files", { p_code: order.trackingCode, p_attachments: attachments });
+      if (error || !data) fail("Could not save attachments", error);
+      return data as Order;
+    },
+    async openAttachment(attachment: Attachment) {
+      const { data, error } = await db.storage.from(FILES_BUCKET).createSignedUrl(attachment.key, 600);
+      return error || !data ? null : data.signedUrl;
     },
     async findOrderByCode(code) {
       const { data, error } = await db.rpc("track_order", { p_code: code });

@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { Instrument_Serif, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { BucketProvider } from "@/components/bucket/BucketProvider";
 import "./globals.css";
 
 const interTight = Inter_Tight({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-inter-tight", display: "swap" });
+const instrument = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["normal", "italic"], variable: "--font-instrument", display: "swap" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-mono-face", display: "swap" });
 
 export const metadata: Metadata = {
@@ -11,12 +13,12 @@ export const metadata: Metadata = {
   openGraph: { title: "R1VLE", description: "Security · Intelligence · Creative Studio", type: "website" },
 };
 
-export const viewport: Viewport = { themeColor: "#0d0d0d", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#0e0f11", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${interTight.variable} ${mono.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={`${interTight.variable} ${instrument.variable} ${mono.variable}`}>
+      <body><BucketProvider>{children}</BucketProvider></body>
     </html>
   );
 }

@@ -184,7 +184,7 @@
      "at": "2026-11-13T00:00:00.000Z",
      "stage": "deposit_confirmed",
      "progress": 5,
-     "note": "Deposit received via EcoCash."
+     "note": "Deposit received."
     },
     {
      "at": "2026-11-20T00:00:00.000Z",
@@ -369,6 +369,104 @@
     "Logo suite",
     "Brand guide PDF",
     "Social kit"
+   ]
+  },
+  {
+   "id": "cre-logo",
+   "departmentId": "creative",
+   "name": "Logo Design",
+   "summary": "A distinctive logo with variations for light, dark and small sizes.",
+   "priceUsd": 120,
+   "unit": "fixed",
+   "deliveryDays": 5,
+   "includes": [
+    "2 concepts",
+    "Colour + mono versions",
+    "Source files"
+   ]
+  },
+  {
+   "id": "cre-flyer",
+   "departmentId": "creative",
+   "name": "Flyer Design",
+   "summary": "Event, promo or product flyer, print-ready and social-ready.",
+   "priceUsd": 35,
+   "unit": "each",
+   "deliveryDays": 2,
+   "includes": [
+    "Print PDF + PNG",
+    "Instagram/WhatsApp sizes",
+    "2 revisions"
+   ]
+  },
+  {
+   "id": "cre-poster",
+   "departmentId": "creative",
+   "name": "Poster Design",
+   "summary": "Large-format poster for events, launches or campaigns.",
+   "priceUsd": 45,
+   "unit": "each",
+   "deliveryDays": 3,
+   "includes": [
+    "A3/A2 print files",
+    "Digital version",
+    "2 revisions"
+   ]
+  },
+  {
+   "id": "cre-social",
+   "departmentId": "creative",
+   "name": "Social Media Post",
+   "summary": "Single branded post or carousel slide for any platform.",
+   "priceUsd": 15,
+   "unit": "each",
+   "deliveryDays": 1,
+   "includes": [
+    "Feed + story sizes",
+    "Caption suggestion",
+    "1 revision"
+   ]
+  },
+  {
+   "id": "cre-card",
+   "departmentId": "creative",
+   "name": "Business Card",
+   "summary": "Two-sided business card design, ready for the printer.",
+   "priceUsd": 25,
+   "unit": "each",
+   "deliveryDays": 2,
+   "includes": [
+    "Front + back",
+    "Print-ready PDF",
+    "QR code option"
+   ]
+  },
+  {
+   "id": "cre-brochure",
+   "departmentId": "creative",
+   "name": "Menu / Brochure",
+   "summary": "Multi-panel menu, brochure or company profile layout.",
+   "priceUsd": 70,
+   "unit": "each",
+   "deliveryDays": 4,
+   "includes": [
+    "Up to 4 panels",
+    "Print + digital",
+    "2 revisions"
+   ]
+  },
+  {
+   "id": "cre-banner",
+   "departmentId": "creative",
+   "name": "Banner / Billboard",
+   "summary": "Roll-up banner, billboard or shopfront signage artwork.",
+   "priceUsd": 60,
+   "unit": "each",
+   "deliveryDays": 3,
+   "includes": [
+    "Large-format files",
+    "Mock-up preview",
+    "2 revisions"
    ]
   },
   {

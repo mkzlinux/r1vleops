@@ -5,7 +5,7 @@ import { Environment, Float, Lightformer, MeshTransmissionMaterial, RoundedBox }
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-const PAGE_BG = new THREE.Color("#f1f1ef");
+const PAGE_BG = new THREE.Color("#f3f3ef");
 
 /** Rounded-square ring (the "portal") built from a 2D shape with a hole, then extruded. */
 function portalGeometry(): THREE.ExtrudeGeometry {
@@ -46,7 +46,7 @@ function Portal({ still }: { still: boolean }) {
       </mesh>
       <Float speed={still ? 0 : 2} rotationIntensity={0.6} floatIntensity={0.6}>
         <RoundedBox args={[0.62, 0.62, 0.62]} radius={0.1} smoothness={6}>
-          <meshStandardMaterial color="#e0403a" roughness={0.25} metalness={0.15} />
+          <meshStandardMaterial color="#c8f53b" roughness={0.3} metalness={0.1} emissive="#9ccc1c" emissiveIntensity={0.25} />
         </RoundedBox>
       </Float>
     </group>
