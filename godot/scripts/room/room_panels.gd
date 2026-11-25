@@ -27,7 +27,7 @@ static func row_button() -> Button:
 
 static func row_content(btn: Control) -> HBoxContainer:
 	var row := OpsUI.hbox(10)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 14
 	row.offset_right = -14
 	row.offset_top = 10
@@ -83,14 +83,14 @@ static func team(list: VBoxContainer, workers: Array, default_dept: String) -> v
 	for w: Dictionary in workers:
 		var p := plain_row()
 		var row := OpsUI.hbox(10)
-		row.add_child(OpsUI.label("◉" if w.get("kind", "") == "ai" else "☺", 22, OpsUI.LIME if w.get("kind", "") == "ai" else Color.WHITE))
+		row.add_child(OpsUI.label("AI" if w.get("kind", "") == "ai" else "HU", 14, OpsUI.LIME if w.get("kind", "") == "ai" else Color.WHITE))
 		var info := OpsUI.vbox(2)
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.add_child(OpsUI.label(str(w.get("name", "")), 14))
 		info.add_child(OpsUI.muted(str(w.get("role", "")), 12))
 		row.add_child(info)
 		var status: String = str(w.get("status", ""))
-		row.add_child(OpsUI.label("● " + status, 12, STATUS_COLORS.get(status, Color.WHITE)))
+		row.add_child(OpsUI.label(status.to_upper(), 11, STATUS_COLORS.get(status, Color.WHITE)))
 		p.add_child(row)
 		list.add_child(p)
 	list.add_child(_hire_form(default_dept))

@@ -68,7 +68,7 @@ func _make_drone(worker_name: String, color: Color) -> Node3D:
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	tag.no_depth_test = true
 	tag.fixed_size = true
-	tag.pixel_size = 0.001
+	tag.pixel_size = 0.00045
 	tag.font_size = 24
 	tag.outline_size = 8
 	tag.outline_modulate = Color(0, 0, 0, 0.6)

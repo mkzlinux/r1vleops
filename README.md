@@ -32,7 +32,7 @@ under `src/lib` and are unit tested. Godot is the view: campus, buildings, rooms
 npm install
 npm run dev            # http://localhost:3000
 npm test               # unit tests (vitest)
-npm run godot:export   # downloads Godot + web templates once, exports to public/ops-app/
+npm run godot:export   # downloads Godot 4.5.1 + web templates once, exports to public/ops-app/ (commit the result)
 npm run godot:test     # headless Godot tests (after godot:export has downloaded the editor)
 npm run seed:sql       # regenerates supabase/seed.sql from the catalog
 ```

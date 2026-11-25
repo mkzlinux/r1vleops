@@ -27,7 +27,7 @@ var _busy: bool = false
 func _ready() -> void:
 	add_theme_constant_override("separation", 10)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var back := OpsUI.pill("←  Back to list")
+	var back := OpsUI.pill("< Back to list")
 	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	back.pressed.connect(func() -> void: back_requested.emit())
 	add_child(back)
@@ -116,7 +116,7 @@ func _build_editor() -> Control:
 	_progress.value_changed.connect(func(v: float) -> void: _progress_label.text = "Progress · %d%%" % int(v))
 	col.add_child(_progress)
 	_note = TextEdit.new()
-	_note.placeholder_text = "Update note — the client sees this on their tracking page."
+	_note.placeholder_text = "Update note: the client sees this on their tracking page."
 	_note.custom_minimum_size.y = 72
 	_note.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	OpsUI.style_input(_note)
@@ -129,10 +129,10 @@ func _build_links() -> Control:
 	links.add_theme_constant_override("h_separation", 6)
 	links.add_theme_constant_override("v_separation", 6)
 	var code: String = str(order.get("trackingCode", ""))
-	var invoice := OpsUI.pill("Open invoice ↗")
+	var invoice := OpsUI.pill("Open invoice")
 	invoice.pressed.connect(func() -> void: OpsApi.open_url("/invoice/%s" % code))
 	links.add_child(invoice)
-	var track := OpsUI.pill("Client tracking view ↗")
+	var track := OpsUI.pill("Client tracking view")
 	track.pressed.connect(func() -> void: OpsApi.open_url("/track?code=%s" % code))
 	links.add_child(track)
 	var wa: String = str(order.get("client", {}).get("whatsapp", "")).replace(" ", "").replace("+", "")

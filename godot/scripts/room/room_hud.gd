@@ -28,11 +28,11 @@ var _scroll: ScrollContainer
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_open_order_id = preselect_order_id
 	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side: String in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 24)
@@ -74,7 +74,7 @@ func _build_left() -> Control:
 	var col := OpsUI.vbox(12)
 	col.custom_minimum_size.x = 380
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var back := OpsUI.pill("←  Campus · Esc")
+	var back := OpsUI.pill("< Campus · Esc")
 	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	back.pressed.connect(func() -> void: back_requested.emit())
 	col.add_child(back)
@@ -94,7 +94,8 @@ func _build_left() -> Control:
 
 
 func _build_right() -> Control:
-	var panel := OpsUI.glass(16)
+	var panel := PanelContainer.new()  # dark glass: Godot has no backdrop blur, so the room must not show through text
+	panel.add_theme_stylebox_override("panel", OpsUI.box(Color(0.06, 0.07, 0.09, 0.9), 22, Color(1, 1, 1, 0.18), 16))
 	panel.custom_minimum_size.x = 440
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var col := OpsUI.vbox(12)

@@ -15,7 +15,7 @@ const AUTO_ROTATE_SPEED: float = 0.06
 var target: Vector3 = Vector3(0, 2, 0)
 var yaw: float = deg_to_rad(40.0)
 var pitch: float = deg_to_rad(34.0)
-var distance: float = 46.0
+var distance: float = 60.0
 var is_flying: bool = false
 
 var _camera: Camera3D

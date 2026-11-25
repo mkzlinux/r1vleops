@@ -127,7 +127,7 @@ func _build_shell() -> void:
 	wall.size = Vector3(24, 8, 0.2)
 	add_child(WorldBuilder.mesh_instance(wall, WorldBuilder.material(Color("#0f1114"), 0.25, 0.6), Vector3(0, 4, -6)))
 	var strip_mat: StandardMaterial3D = WorldBuilder.emissive(_accent, 2.0)
-	for y: float in [0.15, 7.85]:
+	for y: float in [0.15]:  # floor cove only; a top strip would cut across the HUD
 		var strip := BoxMesh.new()
 		strip.size = Vector3(24, 0.06, 0.05)
 		add_child(WorldBuilder.mesh_instance(strip, strip_mat, Vector3(0, y, -5.85)))
@@ -209,7 +209,7 @@ func _build_desks(workers: Array) -> void:
 		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		tag.no_depth_test = true
 		tag.fixed_size = true
-		tag.pixel_size = 0.001
+		tag.pixel_size = 0.00045
 		tag.font_size = 24
 		tag.outline_size = 8
 		tag.outline_modulate = Color(0, 0, 0, 0.6)

@@ -30,10 +30,10 @@ var _error_label: Label
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var root := OpsUI.vbox(0)
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.add_child(_build_top_bar())
@@ -64,7 +64,7 @@ func _build_top_bar() -> Control:
 	var bar := OpsUI.hbox(12)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(bar)
-	bar.add_child(OpsUI.label("◐  R1VLE OPS", 16))
+	bar.add_child(OpsUI.label("R1VLE OPS", 16))
 	bar.add_child(OpsUI.spacer())
 	var search := LineEdit.new()
 	search.placeholder_text = "Search client, code, invoice…"
@@ -77,8 +77,12 @@ func _build_top_bar() -> Control:
 	bar.add_child(search)
 	bar.add_child(OpsUI.spacer())
 	_mode_pill = OpsUI.label("", 11, OpsUI.LIME)
-	bar.add_child(_mode_pill)
-	var site := OpsUI.pill("Public site ↗")
+	var pill_bg := PanelContainer.new()
+	pill_bg.add_theme_stylebox_override("panel", OpsUI.box(Color(0, 0, 0, 0.55), 999, Color(0, 0, 0, 0), 8))
+	pill_bg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	pill_bg.add_child(_mode_pill)
+	bar.add_child(pill_bg)
+	var site := OpsUI.pill("Public site")
 	site.pressed.connect(func() -> void: OpsApi.open_site("/"))
 	bar.add_child(site)
 	return margin
@@ -147,12 +151,12 @@ func _build_strip() -> Control:
 	_filters_row = OpsUI.hbox(8)
 	tools.add_child(_filters_row)
 	tools.add_child(OpsUI.spacer())
-	var prev := OpsUI.pill("←")
+	var prev := OpsUI.pill("<")
 	prev.pressed.connect(func() -> void:
 		_page = maxi(0, _page - 1)
 		_render_strip())
 	_pager_label = OpsUI.label("01 / 01", 20)
-	var next := OpsUI.pill("→")
+	var next := OpsUI.pill(">")
 	next.pressed.connect(func() -> void:
 		_page += 1
 		_render_strip())
@@ -209,7 +213,7 @@ func _dept_row(room_id: String) -> Control:
 	btn.add_theme_stylebox_override("pressed", hover)
 	btn.add_theme_stylebox_override("focus", hover)
 	var row := OpsUI.hbox(10)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 12
 	row.offset_right = -12
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -314,7 +318,7 @@ func _order_card(order: Dictionary) -> Control:
 	btn.add_theme_stylebox_override("pressed", hover)
 	btn.add_theme_stylebox_override("focus", hover)
 	var row := OpsUI.hbox(10)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 16
 	row.offset_right = -12
 	row.offset_top = 12

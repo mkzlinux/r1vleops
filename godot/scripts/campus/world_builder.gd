@@ -53,28 +53,62 @@ static func mesh_instance(mesh: Mesh, mat: Material, pos: Vector3 = Vector3.ZERO
 	return mi
 
 
-## Island: a disc clipped by the river bank, extruded 1.2 units so the bank shows an edge.
-static func build_island() -> Node3D:
+## Island outline in world XZ: a disc clipped by the river bank.
+static func island_outline(steps: int = 120) -> PackedVector2Array:
 	var poly := PackedVector2Array()
-	var steps: int = 120
 	for i: int in steps:
 		var a: float = float(i) / steps * TAU
 		var x: float = cos(a) * ISLAND_RADIUS
-		var world_z: float = minf(sin(a) * ISLAND_RADIUS, bank_z(x))
-		poly.append(Vector2(x, -world_z))  # polygon Y maps to world -Z after the -90° X rotation
-	var island := CSGPolygon3D.new()
-	island.polygon = poly
-	island.depth = 1.2
-	island.rotation_degrees = Vector3(-90, 0, 0)
-	island.position = Vector3(0, -1.2, 0)
-	island.material = material(Color("#8a9a78"), 0.95)
-	return island
+		poly.append(Vector2(x, minf(sin(a) * ISLAND_RADIUS, bank_z(x))))
+	return poly
+
+
+## Island mesh: triangulated top face at y=0 plus vertical banks down to y=-1.2.
+static func build_island() -> MeshInstance3D:
+	var outline: PackedVector2Array = island_outline()
+	var tris: PackedInt32Array = Geometry2D.triangulate_polygon(outline)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_normal(Vector3.UP)
+	for i: int in range(0, tris.size(), 3):
+		var a: Vector2 = outline[tris[i]]
+		var b: Vector2 = outline[tris[i + 1]]
+		var c: Vector2 = outline[tris[i + 2]]
+		var pa := Vector3(a.x, 0, a.y)
+		var pb := Vector3(b.x, 0, b.y)
+		var pc := Vector3(c.x, 0, c.y)
+		if (pb - pa).cross(pc - pa).y < 0.0:  # keep every top triangle facing up
+			var tmp: Vector3 = pb
+			pb = pc
+			pc = tmp
+		for p: Vector3 in [pa, pb, pc]:
+			st.add_vertex(p)
+	var depth: float = 1.2
+	for i: int in outline.size():
+		var p0: Vector2 = outline[i]
+		var p1: Vector2 = outline[(i + 1) % outline.size()]
+		var normal := Vector3(p1.y - p0.y, 0, -(p1.x - p0.x)).normalized()
+		var mid: Vector2 = (p0 + p1) / 2.0
+		if normal.dot(Vector3(mid.x, 0, mid.y)) < 0.0:
+			normal = -normal
+		st.set_normal(normal)
+		var top0 := Vector3(p0.x, 0, p0.y)
+		var top1 := Vector3(p1.x, 0, p1.y)
+		var bot0: Vector3 = top0 + Vector3(0, -depth, 0)
+		var bot1: Vector3 = top1 + Vector3(0, -depth, 0)
+		for p: Vector3 in [top0, bot0, top1, top1, bot0, bot1]:
+			st.add_vertex(p)
+	var mat: StandardMaterial3D = material(Color("#7f9168"), 0.95)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mesh_instance(st.commit(), mat)
 
 
 static func build_water() -> MeshInstance3D:
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(400, 400)
-	return mesh_instance(plane, material(Color("#3b4c52"), 0.12, 0.65), Vector3(0, -0.9, 0))
+	var slab := BoxMesh.new()
+	slab.size = Vector3(400, 0.2, 400)
+	var water: StandardMaterial3D = material(Color("#4a5f63"))
+	water.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED  # lit water mirrors the pale sky and washes out
+	return mesh_instance(slab, water, Vector3(0, -1.0, 0))
 
 
 static func build_roads() -> Node3D:
@@ -116,7 +150,7 @@ static func build_farm() -> Node3D:
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	tag.no_depth_test = true
 	tag.fixed_size = true
-	tag.pixel_size = 0.0011
+	tag.pixel_size = 0.0005
 	tag.font_size = 30
 	tag.outline_size = 8
 	tag.outline_modulate = Color(0, 0, 0, 0.55)
@@ -164,6 +198,7 @@ static func build_trees(count: int = 320) -> MultiMeshInstance3D:
 	sphere.rings = 3
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true
 	mat.roughness = 0.9
 	sphere.material = mat
 
@@ -180,7 +215,7 @@ static func build_trees(count: int = 320) -> MultiMeshInstance3D:
 	return mmi
 
 
-static func build_environment(sky_top: Color, horizon: Color, fog_color: Color, fog_density: float = 0.012) -> WorldEnvironment:
+static func build_environment(sky_top: Color, horizon: Color, fog_color: Color, fog_density: float = 0.0035) -> WorldEnvironment:
 	var sky_mat := ProceduralSkyMaterial.new()
 	sky_mat.sky_top_color = sky_top
 	sky_mat.sky_horizon_color = horizon
@@ -192,19 +227,20 @@ static func build_environment(sky_top: Color, horizon: Color, fog_color: Color, 
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.9
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.ambient_light_energy = 0.45
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 0.95
 	env.fog_enabled = true
 	env.fog_light_color = fog_color
 	env.fog_density = fog_density
 	env.glow_enabled = true
-	env.glow_intensity = 0.6
+	env.glow_intensity = 0.25
 	var we := WorldEnvironment.new()
 	we.environment = env
 	return we
 
 
-static func build_sun(energy: float = 1.6) -> DirectionalLight3D:
+static func build_sun(energy: float = 1.15) -> DirectionalLight3D:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-52, 35, 0)
 	sun.light_energy = energy

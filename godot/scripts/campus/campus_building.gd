@@ -57,7 +57,7 @@ func set_counts(pending: int, active: int) -> void:
 		return
 	var parts: PackedStringArray = []
 	if pending > 0:
-		parts.append("● %d new" % pending)
+		parts.append("%d new" % pending)
 	parts.append("%d active" % active)
 	_counts.text = "  ·  ".join(parts)
 	_counts.modulate = OpsUI.LIME if pending > 0 else Color(1, 1, 1, 0.85)
@@ -111,7 +111,7 @@ func _make_label(text: String, font_size: int, pos: Vector3) -> Label3D:
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
 	l.fixed_size = true
-	l.pixel_size = 0.0011
+	l.pixel_size = 0.0005
 	l.font_size = font_size
 	l.outline_size = 10
 	l.outline_modulate = Color(0, 0, 0, 0.55)
