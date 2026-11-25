@@ -6,7 +6,7 @@ import type { R1vleRepository } from "./repository";
 
 interface ServiceRow {
   id: string; department_id: DepartmentId; name: string; summary: string; price_usd: number | string;
-  unit: PriceUnit; delivery_days: number; includes: string[];
+  unit: PriceUnit; delivery_days: number; includes: string[]; regional: Service["regional"] | null;
 }
 interface WorkerRow {
   id: string; kind: Worker["kind"]; name: string; role: string; department_id: Worker["departmentId"];
@@ -15,7 +15,7 @@ interface WorkerRow {
 interface OrderRow {
   id: string; tracking_code: string; invoice_no: string; created_at: string; department_id: DepartmentId;
   client: Order["client"]; brief: string; lines: Order["lines"]; deposit_pct: number; stage: Order["stage"];
-  progress: number; assigned_worker_id: string | null; attachments: Attachment[] | null;
+  progress: number; assigned_worker_id: string | null; attachments: Attachment[] | null; region: Order["region"];
   order_updates: { at: string; stage: Order["stage"]; progress: number; note: string }[];
 }
 
@@ -24,7 +24,7 @@ const ORDER_SELECT = "*, order_updates(at, stage, progress, note)";
 
 const toService = (r: ServiceRow): Service => ({
   id: r.id, departmentId: r.department_id, name: r.name, summary: r.summary, priceUsd: Number(r.price_usd),
-  unit: r.unit, deliveryDays: r.delivery_days, includes: r.includes,
+  unit: r.unit, deliveryDays: r.delivery_days, includes: r.includes, regional: r.regional ?? undefined,
 });
 const toWorker = (r: WorkerRow): Worker => ({
   id: r.id, kind: r.kind, name: r.name, role: r.role, departmentId: r.department_id, email: r.email,
@@ -37,6 +37,7 @@ const toOrder = (r: OrderRow): Order => ({
   stage: r.stage, progress: r.progress, assignedWorkerId: r.assigned_worker_id,
   updates: [...(r.order_updates ?? [])].sort((a, b) => a.at.localeCompare(b.at)),
   attachments: r.attachments ?? [],
+  region: r.region,
 });
 
 function fail(action: string, error: { message: string } | null): never {
@@ -65,7 +66,7 @@ export function createSupabaseRepository(db: SupabaseClient): R1vleRepository {
     },
     async createOrder(input: NewOrderInput) {
       const { data, error } = await db.rpc("create_order", {
-        p_client: input.client, p_brief: input.brief, p_items: input.items,
+        p_client: input.client, p_brief: input.brief, p_items: input.items, p_region: input.region,
       });
       if (error || !data) fail("Could not place order", error);
       return data as Order;

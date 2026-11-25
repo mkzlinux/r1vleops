@@ -4,7 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DEPARTMENTS, maxQtyFor } from "@/lib/catalog";
 import { formatUsd } from "@/lib/orders";
-import type { DepartmentId, Service } from "@/lib/types";
+import { REGIONS, priceNote, unitPrice } from "@/lib/pricing";
+import type { DepartmentId, Region, Service } from "@/lib/types";
 import { useBucket } from "../bucket/BucketProvider";
 import { Check, Chip, Clock, Film, Minus, Plus, Shield } from "../Icons";
 import { BucketPanel, MobileBucket } from "./BucketPanel";
@@ -17,8 +18,8 @@ const DEPT_ICON: Record<DepartmentId, React.ReactNode> = {
   creative: <Film size={16} />,
 };
 
-export function priceLabel(s: Service): { amount: string; suffix: string; kicker: string } {
-  const amount = formatUsd(s.priceUsd).replace(".00", "");
+export function priceLabel(s: Service, region: Region = "intl"): { amount: string; suffix: string; kicker: string } {
+  const amount = formatUsd(unitPrice(s, region, 1)).replace(".00", "");
   switch (s.unit) {
     case "from": return { amount, suffix: "+", kicker: "Starting at" };
     case "monthly": return { amount, suffix: "/mo", kicker: "Retainer" };
@@ -41,10 +42,12 @@ function QtyStepper({ service }: { service: Service }) {
 }
 
 function ItemCard({ service, index }: { service: Service; index: number }) {
-  const { add, qtyOf, remove } = useBucket();
+  const { add, qtyOf, remove, region } = useBucket();
   const qty = qtyOf(service.id);
   const isPiece = maxQtyFor(service) > 1;
-  const price = priceLabel(service);
+  const price = priceLabel(service, region);
+  const note = priceNote(service, region);
+  const isLocal = Boolean(service.regional?.[region]);
   const btn = useRef<HTMLButtonElement>(null);
   return (
     <article className={`item-card dept-${service.departmentId}${qty > 0 ? " in" : ""}`} style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}>
@@ -61,6 +64,8 @@ function ItemCard({ service, index }: { service: Service; index: number }) {
         <div className="item-price">
           <small>{price.kicker}</small>
           <b>{price.amount}<em>{price.suffix}</em></b>
+          {note && <span className="item-deal">{note}</span>}
+          {isLocal && !note && region === "zw" && <span className="item-deal">Zimbabwe price</span>}
           <span className="item-days"><Clock size={13} /> ~{service.deliveryDays} day{service.deliveryDays === 1 ? "" : "s"}</span>
         </div>
         {qty > 0 && isPiece ? (
@@ -77,7 +82,7 @@ function ItemCard({ service, index }: { service: Service; index: number }) {
 
 export function PricingBuilder() {
   const params = useSearchParams();
-  const { services, add } = useBucket();
+  const { services, add, region, setRegion } = useBucket();
   const initial = params.get("dept");
   const [filter, setFilter] = useState<Filter>(DEPARTMENTS.some((d) => d.id === initial) ? (initial as DepartmentId) : "all");
 
@@ -96,6 +101,13 @@ export function PricingBuilder() {
   return (
     <div className="builder">
       <div className="builder-main">
+        <div className="region-bar" role="radiogroup" aria-label="Price list">
+          <span>Prices for</span>
+          {REGIONS.map((r) => (
+            <button key={r.id} type="button" role="radio" aria-checked={region === r.id} onClick={() => setRegion(r.id)}>{r.label}</button>
+          ))}
+          {region === "zw" && <small>Zimbabwe prices need a +263 WhatsApp number at checkout.</small>}
+        </div>
         <div className="filter-bar" role="tablist" aria-label="Filter by department">
           {[{ id: "all" as const, name: "Everything" }, ...DEPARTMENTS].map((d) => (
             <button key={d.id} type="button" role="tab" aria-selected={filter === d.id} onClick={() => setFilter(d.id)}>

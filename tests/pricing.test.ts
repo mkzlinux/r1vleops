@@ -1,0 +1,46 @@
+import { describe, expect, test } from "vitest";
+import { isZimbabweNumber, priceNote, regionFromCountry, unitPrice } from "@/lib/pricing";
+import { serviceById } from "@/lib/catalog";
+
+const flyer = serviceById("cre-flyer")!;
+const logo = serviceById("cre-logo")!;
+const app = serviceById("int-app")!;
+
+describe("regional pricing", () => {
+  test("Zimbabwe flyers: $20 for one, $17 each for 2+", () => {
+    expect(unitPrice(flyer, "zw", 1)).toBe(20);
+    expect(unitPrice(flyer, "zw", 2)).toBe(17);
+    expect(unitPrice(flyer, "zw", 10)).toBe(17);
+  });
+
+  test("international keeps the list price", () => {
+    expect(unitPrice(flyer, "intl", 1)).toBe(35);
+    expect(unitPrice(flyer, "intl", 5)).toBe(35);
+    expect(unitPrice(logo, "intl", 1)).toBe(120);
+  });
+
+  test("Zimbabwe logo is $20; services without a regional price fall back", () => {
+    expect(unitPrice(logo, "zw", 1)).toBe(20);
+    expect(unitPrice(app, "zw", 1)).toBe(app.priceUsd);
+  });
+
+  test("describes volume discounts", () => {
+    expect(priceNote(flyer, "zw")).toBe("$17 each for 2+");
+    expect(priceNote(flyer, "intl")).toBeNull();
+  });
+
+  test("maps countries to regions", () => {
+    expect(regionFromCountry("ZW")).toBe("zw");
+    expect(regionFromCountry("zw")).toBe("zw");
+    expect(regionFromCountry("ZA")).toBe("intl");
+    expect(regionFromCountry(null)).toBe("intl");
+  });
+
+  test("recognises Zimbabwean WhatsApp numbers", () => {
+    expect(isZimbabweNumber("+263 77 123 4567")).toBe(true);
+    expect(isZimbabweNumber("263771234567")).toBe(true);
+    expect(isZimbabweNumber("0771234567")).toBe(true);
+    expect(isZimbabweNumber("+27 82 123 4567")).toBe(false);
+    expect(isZimbabweNumber("+1 555 0100")).toBe(false);
+  });
+});

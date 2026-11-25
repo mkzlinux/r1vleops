@@ -14,7 +14,7 @@ import { SERVICES } from "@/lib/catalog";
 import type { NewOrderInput } from "@/lib/types";
 
 const client = { name: "Tendai M", company: "Acme", email: "t@acme.co", whatsapp: "+263771234567" };
-const input: NewOrderInput = { client, brief: "Need a site", items: [{ serviceId: "int-site", qty: 1 }, { serviceId: "cre-brand", qty: 1 }] };
+const input: NewOrderInput = { client, brief: "Need a site", items: [{ serviceId: "int-site", qty: 1 }, { serviceId: "cre-brand", qty: 1 }], region: "intl" as const };
 const fixedRandom = () => 0.5;
 
 describe("tracking codes", () => {
@@ -66,7 +66,7 @@ describe("buildOrder", () => {
 
   test("keeps quantities for per-piece items and clamps one-off packs to 1", () => {
     const order = buildOrder(
-      { client, brief: "", items: [{ serviceId: "cre-flyer", qty: 4 }, { serviceId: "int-site", qty: 3 }] },
+      { client, brief: "", items: [{ serviceId: "cre-flyer", qty: 4 }, { serviceId: "int-site", qty: 3 }], region: "intl" as const },
       { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom },
     );
     expect(order.lines.map((l) => l.qty)).toEqual([4, 1]);
@@ -75,19 +75,28 @@ describe("buildOrder", () => {
   });
 
   test("rejects zero or fractional quantities", () => {
-    expect(validateNewOrder({ ...input, items: [{ serviceId: "cre-flyer", qty: 0 }] })).toEqual(expect.arrayContaining([expect.stringMatching(/quantity/i)]));
+    expect(validateNewOrder({ ...input, items: [{ serviceId: "cre-flyer", qty: 0 }], region: "intl" as const })).toEqual(expect.arrayContaining([expect.stringMatching(/quantity/i)]));
+  });
+
+  test("Zimbabwe orders use local tiers and require a +263 number", () => {
+    const zw = { client, brief: "", items: [{ serviceId: "cre-flyer", qty: 3 }], region: "zw" as const };
+    const order = buildOrder(zw, { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom });
+    expect(order.lines[0].rateUsd).toBe(17);
+    expect(order.region).toBe("zw");
+    expect(validateNewOrder(zw)).toEqual([]);
+    expect(validateNewOrder({ ...zw, client: { ...client, whatsapp: "+27 82 123 4567" } })[0]).toMatch(/\+263/);
   });
 
   test("throws for unknown services", () => {
     expect(() =>
-      buildOrder({ ...input, items: [{ serviceId: "nope", qty: 1 }] }, { services: SERVICES, existingInvoiceNos: [], now: new Date(), random: fixedRandom }),
+      buildOrder({ ...input, items: [{ serviceId: "nope", qty: 1 }], region: "intl" as const }, { services: SERVICES, existingInvoiceNos: [], now: new Date(), random: fixedRandom }),
     ).toThrow(/unknown service/i);
   });
 });
 
 describe("validateNewOrder", () => {
   test("returns errors for missing contact details and no services", () => {
-    const errors = validateNewOrder({ client: { name: "", company: "", email: "bad", whatsapp: "" }, brief: "", items: [] });
+    const errors = validateNewOrder({ client: { name: "", company: "", email: "bad", whatsapp: "" }, brief: "", items: [], region: "intl" as const });
     expect(errors).toEqual(expect.arrayContaining([
       expect.stringMatching(/name/i),
       expect.stringMatching(/email/i),

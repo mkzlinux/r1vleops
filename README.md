@@ -32,7 +32,7 @@ npm run seed:sql       # regenerates supabase/seed.sql from the catalog
 
 ## Connecting Supabase later
 
-1. Create a project, run `supabase/migrations/0001_init.sql`, `0002_items_and_files.sql`, then `supabase/seed.sql`.
+1. Create a project, run `supabase/migrations/0001_init.sql`, `0002_items_and_files.sql`, `0003_regional_pricing.sql`, then `supabase/seed.sql`.
 2. Add your auth user's id to `public.admins` so `/ops` can read and edit everything.
 3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`).
 
@@ -51,3 +51,11 @@ always taken from the database, and tracking never exposes client contact detail
 - Colours ("Metal & Signal"): metal black `#0E0F11`→`#2B2F34`, signal lime `#C8F53B`, paper `#F3F3EF`, R1VLE red `#E0403A` for tiny accents only.
 - Payment methods live in `PAYMENT_METHODS` (`src/lib/catalog.ts`). EcoCash, PayPal and USDC show as
   "coming soon"; until they're integrated, deposits are arranged on WhatsApp. No account numbers are published.
+
+## Regional pricing
+
+Visitors are detected as Zimbabwe or International (`/api/region`, from Vercel's IP country header),
+and can switch on `/pricing`. Services may define `regional` tiers in `src/lib/catalog.ts`, e.g.
+Zimbabwe flyers `$20` for one and `$17` each for 2+, and Zimbabwe logos `$20`. Everything else uses
+the list price. Zimbabwe prices only check out with a +263 WhatsApp number; the database enforces the
+same rule and computes prices server-side.

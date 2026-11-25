@@ -11,6 +11,15 @@ export interface Department {
 /** fixed/from: one per order · monthly: qty = months · each: qty = number of pieces (flyers, posters…) */
 export type PriceUnit = "fixed" | "from" | "monthly" | "each";
 
+/** Pricing region: Zimbabwe has local prices for some services; everyone else pays list price. */
+export type Region = "zw" | "intl";
+
+/** Volume tier: from `minQty` pieces upward, each costs `priceUsd`. */
+export interface PriceTier {
+  readonly minQty: number;
+  readonly priceUsd: number;
+}
+
 export interface Service {
   readonly id: string;
   readonly departmentId: DepartmentId;
@@ -20,6 +29,8 @@ export interface Service {
   readonly unit: PriceUnit;
   readonly deliveryDays: number;
   readonly includes: readonly string[];
+  /** Optional per-region price tiers; regions without tiers use `priceUsd`. */
+  readonly regional?: Partial<Record<Region, readonly PriceTier[]>>;
 }
 
 /** Ordered lifecycle of a client project. */
@@ -77,6 +88,8 @@ export interface Order {
   readonly progress: number;
   readonly assignedWorkerId: string | null;
   readonly updates: readonly ProjectUpdate[];
+  /** Price list the order was quoted on (missing on older orders = international). */
+  readonly region?: Region;
   readonly attachments?: readonly Attachment[];
 }
 
@@ -102,6 +115,7 @@ export interface NewOrderInput {
   readonly client: Client;
   readonly brief: string;
   readonly items: readonly OrderItem[];
+  readonly region: Region;
 }
 
 export interface NewWorkerInput {

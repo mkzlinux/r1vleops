@@ -4,10 +4,12 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { addToBucket, bucketCount, parseBucket, priceBucket, removeFromBucket, setBucketQty, type Bucket, type PricedBucket } from "@/lib/bucket";
 import { SERVICES } from "@/lib/catalog";
 import { getRepository } from "@/lib/data";
-import type { Service } from "@/lib/types";
+import { regionFromCountry } from "@/lib/pricing";
+import type { Region, Service } from "@/lib/types";
 import { flyToBucket } from "./flyToBucket";
 
 const STORAGE_KEY = "r1vle-bucket-v1";
+const REGION_KEY = "r1vle-region-v1";
 
 interface BucketContextValue {
   readonly bucket: Bucket;
@@ -16,6 +18,9 @@ interface BucketContextValue {
   readonly count: number;
   /** Increments every time something lands in the bucket, so icons can play a bump animation. */
   readonly pulse: number;
+  /** Price list in use: detected from the visitor's country, overridable on the pricing page. */
+  readonly region: Region;
+  setRegion(region: Region): void;
   add(serviceId: string, from?: HTMLElement | null): void;
   setQty(serviceId: string, qty: number): void;
   remove(serviceId: string): void;
@@ -38,6 +43,22 @@ export function BucketProvider({ children }: { children: ReactNode }) {
   const [services, setServices] = useState<readonly Service[]>(SERVICES);
   const [pulse, setPulse] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [region, setRegionState] = useState<Region>("intl");
+
+  useEffect(() => {
+    let stored: string | null = null;
+    try { stored = window.localStorage.getItem(REGION_KEY); } catch { /* storage unavailable */ }
+    if (stored === "zw" || stored === "intl") { setRegionState(stored); return; }
+    fetch("/api/region")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { country?: string | null } | null) => setRegionState(regionFromCountry(d?.country)))
+      .catch(() => undefined);
+  }, []);
+
+  const setRegion = useCallback((r: Region) => {
+    setRegionState(r);
+    try { window.localStorage.setItem(REGION_KEY, r); } catch { /* per-tab only */ }
+  }, []);
 
   useEffect(() => {
     setBucket(readStored());
@@ -60,7 +81,9 @@ export function BucketProvider({ children }: { children: ReactNode }) {
   const value = useMemo<BucketContextValue>(() => ({
     bucket,
     services,
-    priced: priceBucket(bucket, services),
+    priced: priceBucket(bucket, services, region),
+    region,
+    setRegion,
     count: bucketCount(bucket),
     pulse,
     add,
@@ -68,7 +91,7 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     remove: (id) => setBucket((b) => removeFromBucket(b, id)),
     clear: () => setBucket([]),
     qtyOf: (id) => bucket.find((l) => l.serviceId === id)?.qty ?? 0,
-  }), [bucket, services, pulse, add]);
+  }), [bucket, services, pulse, add, region, setRegion]);
 
   return <BucketContext.Provider value={value}>{children}</BucketContext.Provider>;
 }

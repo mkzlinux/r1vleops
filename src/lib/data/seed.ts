@@ -27,7 +27,7 @@ export function seedOrders(): Order[] {
   const nos: string[] = [];
   const make = (serviceIds: readonly string[], name: string, company: string, day: number): Order => {
     const order = buildOrder(
-      { client: { name, company, email: `${name.split(" ")[0].toLowerCase()}@example.com`, whatsapp: "+263770000000" }, brief: "Demo order", items: serviceIds.map((serviceId) => ({ serviceId, qty: 1 })) },
+      { client: { name, company, email: `${name.split(" ")[0].toLowerCase()}@example.com`, whatsapp: "+263770000000" }, brief: "Demo order", items: serviceIds.map((serviceId) => ({ serviceId, qty: 1 })), region: "intl" },
       { services: SERVICES, existingInvoiceNos: nos, now: new Date(Date.UTC(2026, 10, day)), random },
     );
     nos.push(order.invoiceNo);

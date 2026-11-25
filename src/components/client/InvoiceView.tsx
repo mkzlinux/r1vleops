@@ -46,6 +46,7 @@ export function InvoiceView({ order, isNew }: { order: Order; isNew: boolean }) 
             <h1>{isPaidUp ? "RECEIPT" : "INVOICE"}</h1>
             <div className="meta">No. {order.invoiceNo}</div>
             <div className="meta">Currency / USD &nbsp;Symbol $</div>
+            {order.region === "zw" && <div className="meta">Zimbabwe price list</div>}
           </div>
         </header>
 

@@ -1,6 +1,7 @@
 import { COMPANY, maxQtyFor } from "./catalog";
 import { formatUsd } from "./orders";
-import type { OrderItem, Service } from "./types";
+import { unitPrice } from "./pricing";
+import type { OrderItem, Region, Service } from "./types";
 
 /** The client's selection on the pricing page, before it becomes an order. */
 export type Bucket = readonly OrderItem[];
@@ -8,6 +9,7 @@ export type Bucket = readonly OrderItem[];
 export interface PricedLine {
   readonly service: Service;
   readonly qty: number;
+  readonly unitUsd: number;
   readonly amount: number;
 }
 
@@ -48,10 +50,12 @@ export function bucketCount(bucket: Bucket): number {
   return bucket.reduce((n, l) => n + l.qty, 0);
 }
 
-export function priceBucket(bucket: Bucket, services: readonly Service[]): PricedBucket {
+export function priceBucket(bucket: Bucket, services: readonly Service[], region: Region = "intl"): PricedBucket {
   const lines: PricedLine[] = bucket.flatMap((l) => {
     const service = services.find((s) => s.id === l.serviceId);
-    return service ? [{ service, qty: l.qty, amount: roundCents(service.priceUsd * l.qty) }] : [];
+    if (!service) return [];
+    const unitUsd = unitPrice(service, region, l.qty);
+    return [{ service, qty: l.qty, unitUsd, amount: roundCents(unitUsd * l.qty) }];
   });
   const total = roundCents(lines.reduce((sum, l) => sum + l.amount, 0));
   const deposit = roundCents((total * COMPANY.depositPct) / 100);
@@ -75,8 +79,8 @@ export function parseBucket(raw: string | null): Bucket {
   }
 }
 
-export function bucketWhatsappMessage(bucket: Bucket, services: readonly Service[]): string {
-  const priced = priceBucket(bucket, services);
+export function bucketWhatsappMessage(bucket: Bucket, services: readonly Service[], region: Region = "intl"): string {
+  const priced = priceBucket(bucket, services, region);
   const lines = priced.lines.map((l) => `• ${l.qty} × ${l.service.name} — ${formatUsd(l.amount)}`);
-  return [`Hi ${COMPANY.name}, I'd like to negotiate this bucket:`, ...lines, `Listed total: ${formatUsd(priced.total)}`].join("\n");
+  return [`Hi ${COMPANY.name}, I'd like to negotiate this bucket:`, ...lines, `Listed total: ${formatUsd(priced.total)}${region === "zw" ? " (Zimbabwe pricing)" : ""}`].join("\n");
 }

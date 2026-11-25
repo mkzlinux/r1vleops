@@ -10,7 +10,7 @@ import { useBucket } from "../bucket/BucketProvider";
 import { ArrowUpRight, BucketIcon, Close, Minus, Plus, Trash, WhatsApp } from "../Icons";
 
 function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
-  const { bucket, services, priced, setQty, remove, clear } = useBucket();
+  const { bucket, services, priced, region, setQty, remove, clear } = useBucket();
   if (priced.lines.length === 0) {
     return (
       <div className="bucket-empty">
@@ -22,11 +22,11 @@ function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <>
       <ul className="bucket-lines">
-        {priced.lines.map(({ service, qty, amount }) => (
+        {priced.lines.map((l) => { const { service, qty, amount } = l; return (
           <li key={service.id} className="bucket-line">
             <div className="bl-info">
               <b>{service.name}</b>
-              <small>{formatUsd(service.priceUsd)}{service.unit === "each" ? " each" : service.unit === "monthly" ? " / month" : ""}</small>
+              <small>{formatUsd(l.unitUsd)}{service.unit === "each" ? " each" : service.unit === "monthly" ? " / month" : ""}</small>
             </div>
             {maxQtyFor(service) > 1 ? (
               <div className="mini-stepper">
@@ -39,7 +39,7 @@ function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
             )}
             <span className="bl-amount">{formatUsd(amount)}</span>
           </li>
-        ))}
+        ); })}
       </ul>
       <button type="button" className="bucket-clear" onClick={clear}>Clear bucket</button>
       <div className="bucket-sums">
@@ -47,10 +47,10 @@ function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
         <div><span>Balance on delivery</span><b>{formatUsd(priced.balance)}</b></div>
       </div>
       <div className="bucket-total">
-        <small>Total</small>
+        <small>Total{region === "zw" ? " · Zimbabwe" : ""}</small>
         <strong>{formatUsd(priced.total)}</strong>
       </div>
-      <a className="btn btn-outline-signal negotiate" href={waLink(bucketWhatsappMessage(bucket, services))} target="_blank" rel="noopener noreferrer">
+      <a className="btn btn-outline-signal negotiate" href={waLink(bucketWhatsappMessage(bucket, services, region))} target="_blank" rel="noopener noreferrer">
         <WhatsApp size={18} /> Negotiate this price
       </a>
       <Link href="/order" className="btn btn-lime checkout" onClick={onNavigate}>

@@ -65,7 +65,7 @@ function FileDrop({ files, onChange, isHighlighted }: { files: File[]; onChange:
 export function OrderForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { bucket, services, priced, add, clear } = useBucket();
+  const { bucket, services, priced, region, setRegion, add, clear } = useBucket();
   const [client, setClient] = useState<Client>(EMPTY_CLIENT);
   const [brief, setBrief] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -89,7 +89,7 @@ export function OrderForm() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (honeypot) return;
-    const input = { client, brief, items: bucket };
+    const input = { client, brief, items: bucket, region };
     const problems = [...validateNewOrder(input), ...validateFiles(files)];
     setErrors(problems);
     if (problems.length > 0) return;
@@ -143,16 +143,19 @@ export function OrderForm() {
       </div>
 
       <aside className="summary" aria-live="polite">
-        <div className="sum-head"><span className="eyebrow" style={{ color: "#8f8f8c" }}>Your bucket</span><Link href="/pricing">Edit</Link></div>
+        <div className="sum-head"><span className="eyebrow" style={{ color: "#8f8f8c" }}>Your bucket · {region === "zw" ? "Zimbabwe" : "International"} prices</span><Link href="/pricing">Edit</Link></div>
         {priced.lines.map((l) => (
           <div className="row" key={l.service.id}><span>{l.qty > 1 ? `${l.qty} × ` : ""}{l.service.name}</span><b>{formatUsd(l.amount)}</b></div>
         ))}
         <div className="dep"><small>Due now to start · {COMPANY.depositPct}% deposit</small><div className="big">{formatUsd(priced.deposit)}</div><small>Balance {formatUsd(priced.balance)} on delivery</small></div>
         <div><small>Total</small><div className="big total">{formatUsd(priced.total)}</div></div>
-        <a className="btn btn-outline-signal" href={waLink(bucketWhatsappMessage(bucket, services))} target="_blank" rel="noopener noreferrer" style={{ justifyContent: "center" }}>
+        <a className="btn btn-outline-signal" href={waLink(bucketWhatsappMessage(bucket, services, region))} target="_blank" rel="noopener noreferrer" style={{ justifyContent: "center" }}>
           <WhatsApp size={18} /> Negotiate this price
         </a>
         {errors.length > 0 && <div className="error-box" role="alert">{errors.map((x) => <div key={x}>{x}</div>)}</div>}
+        {region === "zw" && errors.some((x) => x.includes("+263")) && (
+          <button type="button" className="btn btn-outline-signal" style={{ justifyContent: "center" }} onClick={() => { setRegion("intl"); setErrors([]); }}>Use international prices</button>
+        )}
         <button className="btn btn-lime" type="submit" disabled={status !== "idle"}>
           <span>{status === "placing" ? "Generating invoice…" : status === "uploading" ? "Uploading files…" : "Place order & get invoice"}</span><span className="arrow"><ArrowUpRight size={16} /></span>
         </button>

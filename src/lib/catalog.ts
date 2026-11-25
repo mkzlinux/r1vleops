@@ -108,12 +108,14 @@ export const SERVICES: readonly Service[] = [
     summary: "A distinctive logo with variations for light, dark and small sizes.",
     priceUsd: 120, unit: "fixed", deliveryDays: 5,
     includes: ["2 concepts", "Colour + mono versions", "Source files"],
+    regional: { zw: [{ minQty: 1, priceUsd: 20 }] },
   },
   {
     id: "cre-flyer", departmentId: "creative", name: "Flyer Design",
     summary: "Event, promo or product flyer, print-ready and social-ready.",
     priceUsd: 35, unit: "each", deliveryDays: 2,
     includes: ["Print PDF + PNG", "Instagram/WhatsApp sizes", "2 revisions"],
+    regional: { zw: [{ minQty: 1, priceUsd: 20 }, { minQty: 2, priceUsd: 17 }] },
   },
   {
     id: "cre-poster", departmentId: "creative", name: "Poster Design",

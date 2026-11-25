@@ -43,6 +43,12 @@ describe("bucket", () => {
     expect(priced.lines).toHaveLength(2);
   });
 
+  test("prices with Zimbabwe tiers when region is zw", () => {
+    const priced = priceBucket([{ serviceId: "cre-flyer", qty: 2 }, { serviceId: "cre-logo", qty: 1 }], SERVICES, "zw");
+    expect(priced.total).toBe(2 * 17 + 20);
+    expect(bucketWhatsappMessage([{ serviceId: "cre-flyer", qty: 1 }], SERVICES, "zw")).toMatch(/Zimbabwe pricing/);
+  });
+
   test("parses stored data defensively", () => {
     expect(parseBucket('[{"serviceId":"cre-flyer","qty":2},{"serviceId":5},{"serviceId":"x","qty":-1}]')).toEqual([{ serviceId: "cre-flyer", qty: 2 }]);
     expect(parseBucket("not json")).toEqual([]);

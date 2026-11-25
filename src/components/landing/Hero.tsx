@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { waLink } from "@/lib/config";
 import { ArrowUpRight, Chip, Coin, Film, Pen, Play, Shield } from "../Icons";
+import { XRayHero, XRayLayer } from "./XRay";
 
 const HeroVisual = dynamic(() => import("./HeroVisual"), { ssr: false, loading: () => null });
 
@@ -27,6 +28,7 @@ function MiniRing({ value }: { value: number }) {
 export function Hero() {
   return (
     <section className="hero" aria-labelledby="hero-title">
+      <XRayHero>
       <div className="wrap hero-grid">
         <div className="hero-copy">
           <span className="chip"><span className="dot" />Infrastructure behind the invisible</span>
@@ -62,6 +64,8 @@ export function Hero() {
           <div className="hero-counter" aria-hidden="true"><b>01</b><i />02<br />03</div>
         </div>
       </div>
+      <XRayLayer />
+      </XRayHero>
       <div className="wrap">
         <div className="strip">
           {FEATURES.map((f) => (
