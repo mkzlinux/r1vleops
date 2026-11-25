@@ -66,16 +66,27 @@ func _test_scene(path: String, check: Callable) -> void:
 	await get_tree().process_frame
 
 
+## Recursively collects nodes that are instances of a script class (find_children only matches native classes).
+func _find(root: Node, cls: Script) -> Array[Node]:
+	var out: Array[Node] = []
+	for child: Node in root.get_children():
+		if is_instance_of(child, cls):
+			out.append(child)
+		out.append_array(_find(child, cls))
+	return out
+
+
 func _check_campus(scene: Node) -> void:
 	var buildings: Array = scene.get_children().filter(func(n: Node) -> bool: return n is CampusBuilding)
 	_expect(buildings.size() == 4, "campus has 4 buildings")
-	_expect(scene.find_children("*", "CampusHud", true, false).size() == 1, "campus HUD present")
-	_expect(scene.find_children("*", "WorkerDrones", true, false).size() == 1, "drones present")
-	var drones: WorkerDrones = scene.find_children("*", "WorkerDrones", true, false)[0]
-	_expect(drones.get_child_count() == 5, "one drone per AI worker")
+	_expect(_find(scene, CampusHud).size() == 1, "campus HUD present")
+	var drones: Array[Node] = _find(scene, WorkerDrones)
+	_expect(drones.size() == 1, "drones present")
+	if drones.size() == 1:
+		_expect(drones[0].get_child_count() == 5, "one drone per AI worker")
 
 
 func _check_room(scene: Node, room_id: String) -> void:
-	var huds: Array = scene.find_children("*", "RoomHud", true, false)
+	var huds: Array[Node] = _find(scene, RoomHud)
 	_expect(huds.size() == 1, "room HUD present in " + room_id)
 	_expect(scene.get("room_id") == room_id, "room id applied for " + room_id)

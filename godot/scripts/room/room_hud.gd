@@ -22,6 +22,7 @@ var _kpi_row: HBoxContainer
 var _spotlight: PanelContainer
 var _spot_box: VBoxContainer
 var _tabs_row: HBoxContainer
+var _tabs_bg: PanelContainer
 var _list: VBoxContainer
 var _scroll: ScrollContainer
 
@@ -98,11 +99,11 @@ func _build_right() -> Control:
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var col := OpsUI.vbox(12)
 	panel.add_child(col)
-	var tabs_bg := PanelContainer.new()
-	tabs_bg.add_theme_stylebox_override("panel", OpsUI.box(Color(0, 0, 0, 0.45), 999, Color(0, 0, 0, 0), 4))
+	_tabs_bg = PanelContainer.new()
+	_tabs_bg.add_theme_stylebox_override("panel", OpsUI.box(Color(0, 0, 0, 0.45), 999, Color(0, 0, 0, 0), 4))
 	_tabs_row = OpsUI.hbox(4)
-	tabs_bg.add_child(_tabs_row)
-	col.add_child(tabs_bg)
+	_tabs_bg.add_child(_tabs_row)
+	col.add_child(_tabs_bg)
 	_scroll = ScrollContainer.new()
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -126,7 +127,7 @@ func _render_kpis() -> void:
 func _render_workspace() -> void:
 	OpsUI.clear(_list)
 	var order: Dictionary = OpsApi.find_order(_open_order_id) if _open_order_id != "" else {}
-	_tabs_row.get_parent().visible = order.is_empty()
+	_tabs_bg.visible = order.is_empty()
 	if not order.is_empty():
 		var detail := OrderDetail.new()
 		detail.order = order

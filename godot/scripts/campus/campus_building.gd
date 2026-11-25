@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 func set_counts(pending: int, active: int) -> void:
 	if _counts == null:
 		return
-	var parts: Array[String] = []
+	var parts: PackedStringArray = []
 	if pending > 0:
 		parts.append("● %d new" % pending)
 	parts.append("%d active" % active)
@@ -66,7 +66,8 @@ func set_counts(pending: int, active: int) -> void:
 func _apply_lit() -> void:
 	if _title != null:
 		_title.modulate = Color.WHITE if is_lit else Color(1, 1, 1, 0.9)
-		_title.outline_modulate = Color(OpsUI.ROOM_ACCENTS.get(site_id, Color.WHITE), 0.6) if is_lit else Color(0, 0, 0, 0.55)
+		var accent: Color = OpsUI.ROOM_ACCENTS.get(site_id, Color.WHITE)
+		_title.outline_modulate = Color(accent, 0.6) if is_lit else Color(0, 0, 0, 0.55)
 
 
 func _build_hitbox() -> void:

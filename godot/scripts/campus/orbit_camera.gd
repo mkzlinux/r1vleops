@@ -7,8 +7,8 @@ signal arrived(site_id: String)
 
 const MIN_DISTANCE: float = 12.0
 const MAX_DISTANCE: float = 70.0
-const MIN_PITCH: float = deg_to_rad(18.0)
-const MAX_PITCH: float = deg_to_rad(70.0)
+const MIN_PITCH: float = 0.314159  # 18°
+const MAX_PITCH: float = 1.22173  # 70°
 const IDLE_SECONDS: float = 4.0
 const AUTO_ROTATE_SPEED: float = 0.06
 
