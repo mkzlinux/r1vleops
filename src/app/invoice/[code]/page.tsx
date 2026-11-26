@@ -15,7 +15,7 @@ function InvoiceLoader() {
   const search = useSearchParams();
   const code = decodeURIComponent(params.code ?? "");
   const state = useOrderByCode(code);
-  if (state.status === "found") return <InvoiceView order={state.order} isNew={search.get("new") === "1"} />;
+  if (state.status === "found") return <InvoiceView order={state.order} isNew={search.get("new") === "1"} filesFailed={search.get("files") === "failed"} />;
   if (state.status === "error") return <p className="wrap error-box" role="alert">{state.message}</p>;
   if (state.status === "missing") return <p className="empty">No invoice matches code <span className="mono">{code}</span>.</p>;
   return <p className="empty">Loading invoice…</p>;

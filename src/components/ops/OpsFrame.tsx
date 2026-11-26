@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { isSupabaseConfigured } from "@/lib/data";
+import { isCloudflareBackend, isSupabaseConfigured } from "@/lib/data";
 import { Chip, Film, Plus, Shield, Users } from "../Icons";
 import { OpsBackground } from "./OpsBackground";
 
@@ -57,10 +57,12 @@ export function OpsFrame({ active, accent, strikeTarget, alerts = 0, children }:
           <header className="ops-top">
             <div className="ops-hello"><small>Welcome back</small><b>Founder · R1VLE Ops</b></div>
             <div className="ops-actions">
-              <span className="ops-mode">{isSupabaseConfigured ? "Live data" : "Demo · this browser"}</span>
+              <span className="ops-mode">{isSupabaseConfigured || isCloudflareBackend ? "Live data" : "Demo · this browser"}</span>
               <Link href="/pricing" className="ops-round" aria-label="New order" title="New order"><Plus size={18} /></Link>
               <Link href="/ops#requests" className="ops-round" aria-label={`${alerts} new requests`} title="New requests"><BellIcon />{alerts > 0 && <span className="ops-dot">{alerts}</span>}</Link>
-              <span className="ops-avatar" aria-hidden="true">R1</span>
+              {isCloudflareBackend
+                ? <button type="button" className="ops-avatar" title="Sign out" aria-label="Sign out" onClick={() => { fetch("/api/ops/logout", { method: "POST" }).finally(() => window.location.reload()); }}>R1</button>
+                : <span className="ops-avatar" aria-hidden="true">R1</span>}
             </div>
           </header>
           {children}

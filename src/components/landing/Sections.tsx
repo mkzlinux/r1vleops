@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { DEPARTMENTS, SERVICES } from "@/lib/catalog";
+import { DEPARTMENTS } from "@/lib/catalog";
 import { waLink } from "@/lib/config";
-import { formatUsd } from "@/lib/orders";
 import type { DepartmentId } from "@/lib/types";
-import { ArrowUpRight, Bot, Chip, Clock, Film, Leaf, Shield, Sparkle } from "../Icons";
+import { ArrowUpRight, Bot, Chip, Film, Leaf, Shield, Sparkle } from "../Icons";
 
 const CAPABILITIES = [
   "Penetration testing", "Smart contracts", "AI agents", "Flyers & posters", "Fintech rails", "Motion graphics",
@@ -62,14 +61,42 @@ export function AboutBento() {
 
 const DEPT_ICONS: Record<DepartmentId, React.ReactNode> = { security: <Shield size={15} />, intelligence: <Chip size={15} />, creative: <Film size={15} /> };
 
-function fromPrice(id: DepartmentId): string {
-  const prices = SERVICES.filter((s) => s.departmentId === id).map((s) => s.priceUsd);
-  return formatUsd(Math.min(...prices)).replace(".00", "");
+interface DeptStory {
+  readonly line: string;
+  readonly does: readonly string[];
+  readonly gets: readonly string[];
+  readonly for: readonly string[];
 }
 
-function deliveryRange(id: DepartmentId): string {
-  const days = SERVICES.filter((s) => s.departmentId === id).map((s) => s.deliveryDays);
-  return `${Math.min(...days)}–${Math.max(...days)} days`;
+/** What each department actually does, in plain words. Prices live on /pricing only. */
+const DEPT_STORY: Record<DepartmentId, DeptStory> = {
+  security: {
+    line: "We break in before someone else does.",
+    does: ["Penetration tests on websites, apps, networks and APIs", "Security audits and hardening of servers, cloud and code", "Ongoing monitoring with a human on call when something trips"],
+    gets: ["A plain-language report, ranked by real risk", "A fix-by-fix plan, then a retest to prove it", "Evidence you can show clients, banks and regulators"],
+    for: ["Fintechs and payment startups", "Businesses holding customer data", "Anyone about to launch"],
+  },
+  intelligence: {
+    line: "We build the systems that run quietly and never miss.",
+    does: ["Websites, web apps and mobile apps", "Fintech rails: wallets, payments, USD and USDC settlement", "Blockchain and smart contracts", "AI agents and automations, including on WhatsApp"],
+    gets: ["Working, documented software that you own", "Hosting, domains and handover set up for you", "Agents that answer customers around the clock"],
+    for: ["Founders turning an idea into a product", "Businesses moving operations online", "Teams that move money"],
+  },
+  creative: {
+    line: "We make people stop scrolling.",
+    does: ["Brand identity and logos", "Flyers, posters, social packs, cards, brochures and banners", "Motion graphics and cinematic films"],
+    gets: ["Print-ready and social-ready files", "Editable source files on request", "Motion cut for every platform you post on"],
+    for: ["Events, churches and shops", "Brands launching or rebranding", "Products that need a story told"],
+  },
+};
+
+function StoryList({ title, items }: { title: string; items: readonly string[] }) {
+  return (
+    <div className="ds-col">
+      <h4>{title}</h4>
+      <ul>{items.map((x) => <li key={x}>{x}</li>)}</ul>
+    </div>
+  );
 }
 
 export function Departments() {
@@ -79,29 +106,32 @@ export function Departments() {
         <div className="section-head">
           <div>
             <span className="eyebrow">Three departments · one studio</span>
-            <h2 id="dept-title">Departments that <span className="accent">deliver.</span></h2>
+            <h2 id="dept-title">What each department <span className="accent mark">does.</span></h2>
           </div>
-          <Link href="/pricing" className="btn btn-plain see-all">See all services <ArrowUpRight size={16} /></Link>
+          <p className="ds-intro">Every project lands in one of three rooms. Each has its own crew, tools and standards, and they work together when a job needs more than one.</p>
         </div>
-        <div className="dept-cards">
-          {DEPARTMENTS.map((d) => (
-            <Link key={d.id} href={`/pricing?dept=${d.id}`} className={`dept-card dc-${d.id}`}>
-              <div className="dc-art" aria-hidden="true">
-                <span className="dc-tag">{DEPT_ICONS[d.id]}{d.name}</span>
-                <span className="dc-go"><ArrowUpRight size={18} /></span>
-                <span className="dc-shape" />
-              </div>
-              <div className="dc-body">
-                <h3>{d.name}</h3>
-                <p>{d.tagline}</p>
-                <div className="dc-chips">{d.disciplines.map((x) => <span key={x}>{x}</span>)}</div>
-                <div className="dc-meta">
-                  <span><b>{fromPrice(d.id)}</b><small>From</small></span>
-                  <span><Clock size={16} /><b>{deliveryRange(d.id)}</b></span>
+        <div className="dossiers">
+          {DEPARTMENTS.map((d, i) => {
+            const story = DEPT_STORY[d.id];
+            return (
+              <article key={d.id} className={`dossier dc-${d.id}`} aria-labelledby={`ds-${d.id}`}>
+                <div className="dc-art ds-art" aria-hidden="true">
+                  <span className="dc-tag">{DEPT_ICONS[d.id]}{d.name}</span>
+                  <span className="ds-num">0{i + 1}</span>
+                  <span className="dc-shape" />
                 </div>
-              </div>
-            </Link>
-          ))}
+                <div className="ds-body">
+                  <h3 id={`ds-${d.id}`}>{d.name}</h3>
+                  <p className="ds-line">{story.line}</p>
+                  <div className="ds-cols">
+                    <StoryList title="What we do" items={story.does} />
+                    <StoryList title="What you walk away with" items={story.gets} />
+                    <StoryList title="Who calls us" items={story.for} />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>

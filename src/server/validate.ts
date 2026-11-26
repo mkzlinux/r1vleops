@@ -1,0 +1,48 @@
+import { DEPARTMENTS } from "@/lib/catalog";
+import type { OrderAdvance } from "@/lib/orders";
+import { STAGES, type DepartmentId, type NewOrderInput, type NewWorkerInput, type Region, type Stage } from "@/lib/types";
+import { StoreError, type FileMeta } from "./sqlStore";
+
+/** Shape checks for untrusted JSON at the API boundary. Business rules run afterwards in the store. */
+type Obj = Record<string, unknown>;
+const fail = (what: string): never => { throw new StoreError(`Invalid ${what}.`); };
+const obj = (v: unknown, what: string): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : fail(what));
+const str = (v: unknown, what: string, max: number): string => (typeof v === "string" && v.length <= max ? v : fail(what));
+const optStr = (v: unknown, what: string, max: number): string => (v === undefined || v === null ? "" : str(v, what, max));
+const num = (v: unknown, what: string): number => (typeof v === "number" && Number.isFinite(v) ? v : fail(what));
+const oneOf = <T extends string>(v: unknown, options: readonly T[], what: string): T => (options.includes(v as T) ? (v as T) : fail(what));
+const DEPT_IDS: readonly DepartmentId[] = DEPARTMENTS.map((d) => d.id);
+const REGIONS: readonly Region[] = ["zw", "intl"];
+
+export function parseNewOrder(body: unknown): NewOrderInput {
+  const b = obj(body, "order");
+  const c = obj(b.client, "client details");
+  const items = Array.isArray(b.items) && b.items.length <= 30 ? b.items : fail("items");
+  return {
+    client: { name: str(c.name, "name", 120), company: optStr(c.company, "company", 160), email: str(c.email, "email", 200), whatsapp: str(c.whatsapp, "WhatsApp number", 40) },
+    brief: optStr(b.brief, "brief", 4000),
+    items: items.map((raw) => { const i = obj(raw, "item"); return { serviceId: str(i.serviceId, "item", 60), qty: num(i.qty, "quantity") }; }),
+    region: oneOf(b.region, REGIONS, "price region"),
+  };
+}
+
+export function parseAdvance(body: unknown): OrderAdvance {
+  const b = obj(body, "update");
+  return { stage: oneOf<Stage>(b.stage, STAGES, "stage"), progress: num(b.progress, "progress"), note: optStr(b.note, "note", 1000) };
+}
+
+export function parseNewWorker(body: unknown): NewWorkerInput {
+  const b = obj(body, "employee");
+  return { name: str(b.name, "name", 120), role: str(b.role, "role", 120), departmentId: oneOf(b.departmentId, DEPT_IDS, "department"), email: optStr(b.email, "email", 200) };
+}
+
+export function parseFileMetas(body: unknown): FileMeta[] {
+  const list = obj(body, "files").files;
+  if (!Array.isArray(list) || list.length === 0 || list.length > 10) return fail("file list");
+  return list.map((raw) => {
+    const f = obj(raw, "file");
+    const size = num(f.size, "file size");
+    if (size < 0) fail("file size");
+    return { name: str(f.name, "file name", 255), type: optStr(f.type, "file type", 120), size };
+  });
+}

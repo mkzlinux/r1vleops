@@ -1,12 +1,64 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { getSupabase, isSupabaseConfigured } from "@/lib/data";
+import { getSupabase, isCloudflareBackend, isSupabaseConfigured } from "@/lib/data";
 
 type GateState = "checking" | "signed-in" | "signed-out";
 
-/** In Supabase mode, requires a signed-in admin (magic link). In local demo mode, opens directly. */
+/** Cloudflare mode: operator password -> httpOnly session cookie set by /api/ops/login. */
+function PasswordGate({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<GateState>("checking");
+  const [password, setPassword] = useState("");
+  const [note, setNote] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/ops/session", { cache: "no-store" })
+      .then((r) => { if (!cancelled) setState(r.ok ? "signed-in" : "signed-out"); })
+      .catch(() => { if (!cancelled) setState("signed-out"); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsBusy(true);
+    setNote(null);
+    try {
+      const res = await fetch("/api/ops/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (res.ok) { setPassword(""); setState("signed-in"); } else setNote(body.error ?? "Sign-in failed.");
+    } catch {
+      setNote("Can't reach the server. Try again.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  if (state === "signed-in") return <>{children}</>;
+  return (
+    <div className="ops gate">
+      <form className="glass" onSubmit={submit}>
+        <span className="mode-pill">R1VLE Ops</span>
+        <h1>Operator sign-in</h1>
+        {state === "checking" ? <p className="hint-line">Checking session…</p> : (
+          <>
+            <div className="field"><label htmlFor="g-pass">Password</label><input id="g-pass" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></div>
+            <button className="btn btn-lime" type="submit" disabled={isBusy} style={{ justifyContent: "center" }}>{isBusy ? "Signing in…" : "Sign in"}</button>
+            {note && <p className="hint-line" role="alert">{note}</p>}
+          </>
+        )}
+      </form>
+    </div>
+  );
+}
+
+/** Signs in the operator: password in Cloudflare mode, magic link in Supabase mode; opens directly in local demo mode. */
 export function OpsGate({ children }: { children: ReactNode }) {
+  return isCloudflareBackend ? <PasswordGate>{children}</PasswordGate> : <SupabaseGate>{children}</SupabaseGate>;
+}
+
+function SupabaseGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>(isSupabaseConfigured ? "checking" : "signed-in");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState<string | null>(null);

@@ -13,8 +13,8 @@ R1VLE's public site and the founder's operations campus.
 ## How the pieces talk
 
 Every page (site and `/ops`) reads and writes through one `R1vleRepository` (`src/lib/data`):
-browser-local demo data by default, Supabase when `NEXT_PUBLIC_SUPABASE_URL` and
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are set. Business rules (pricing, buckets, invoice numbers,
+browser-local demo data by default, or **Cloudflare** (D1 database + R2 file storage) when
+`NEXT_PUBLIC_DATA_BACKEND=cloudflare`. A Supabase adapter also remains available. Business rules (pricing, buckets, invoice numbers,
 tracking codes, stages, stats, the ops "forecast") live in `src/lib` and are unit tested.
 
 The `/ops` background (`src/components/ops/OpsBackground.tsx`) is a canvas "tech storm": drifting
@@ -26,11 +26,41 @@ It pauses when the tab is hidden and renders a still frame for reduced-motion us
 ```bash
 npm install
 npm run dev            # http://localhost:3000
-npm test               # unit tests (vitest)
+npm test               # unit + server tests (vitest; server tests run the real D1 schema on node:sqlite)
 npm run seed:sql       # regenerates supabase/seed.sql from the catalog
 ```
 
-## Connecting Supabase later
+## Going live on Cloudflare (D1 + R2)
+
+The browser never talks to Cloudflare directly. Next.js API routes (`src/app/api`) hold the
+credentials and use `src/server`: D1 over its REST API, R2 over its S3 API (presigned URLs, so
+client files up to 15 MB go straight to R2 and skip Vercel's 4.5 MB body limit).
+
+Already created: D1 database `r1vleops` (schema in `cloudflare/schema.sql`, five AI workers seeded)
+and R2 bucket `r1vleops-order-files`.
+
+1. Cloudflare dashboard → My Profile → API Tokens → Create token (custom) with
+   **Account · D1 · Edit** and **Account · Workers R2 Storage · Edit**. Note the token's **ID** and its value.
+2. In Vercel → Project → Settings → Environment Variables (Production), add:
+
+   | Name | Value |
+   |------|-------|
+   | `NEXT_PUBLIC_DATA_BACKEND` | `cloudflare` |
+   | `CLOUDFLARE_ACCOUNT_ID` | your account ID (Cloudflare dashboard sidebar) |
+   | `CLOUDFLARE_D1_DATABASE_ID` | `525d53e5-6419-44ac-bc39-ded8b4104e12` |
+   | `CLOUDFLARE_API_TOKEN` | the token value (mark Sensitive) |
+   | `CLOUDFLARE_API_TOKEN_ID` | the token ID |
+   | `R2_BUCKET` | `r1vleops-order-files` |
+   | `OPS_PASSWORD` | a long password for `/ops` (Sensitive) |
+   | `OPS_SESSION_SECRET` | 32+ random characters, e.g. `openssl rand -hex 32` (Sensitive) |
+
+3. Redeploy. Sign in at `/ops` once: that also allows the site to upload files to R2 (bucket CORS).
+
+Security: prices are always recomputed on the server; public tracking hides contact details and the
+brief; public endpoints are rate limited per IP in D1; `/ops` APIs need an httpOnly, SameSite=strict,
+HMAC-signed session cookie and same-origin requests.
+
+## Connecting Supabase (alternative)
 
 1. Create a project, run `supabase/migrations/0001_init.sql`, `0002_items_and_files.sql`, `0003_regional_pricing.sql`, then `supabase/seed.sql`.
 2. Add your auth user's id to `public.admins` so `/ops` can read and edit everything.

@@ -13,7 +13,7 @@ const fmtDate = (iso: string): string => {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 };
 
-export function InvoiceView({ order, isNew }: { order: Order; isNew: boolean }) {
+export function InvoiceView({ order, isNew, filesFailed = false }: { order: Order; isNew: boolean; filesFailed?: boolean }) {
   const totals = orderTotals(order);
   const dept = departmentById(order.departmentId);
   const isPaidUp = order.stage === "closed";
@@ -25,6 +25,7 @@ export function InvoiceView({ order, isNew }: { order: Order; isNew: boolean }) 
       <div className="wrap inv-bar no-print">
         <div>
           {isNew && <p style={{ margin: 0, fontWeight: 700 }}>Order placed. Save your tracking code: <span className="mono">{order.trackingCode}</span></p>}
+          {filesFailed && <p className="error-box" role="alert" style={{ margin: "6px 0" }}>Your order is saved, but your files didn&apos;t upload. Please send them to us on WhatsApp.</p>}
           <p style={{ margin: 0, color: "var(--mute)", fontSize: 14 }}>Ask us for deposit details on WhatsApp. Work starts once your 50% deposit is confirmed.</p>
         </div>
         <div className="tools">

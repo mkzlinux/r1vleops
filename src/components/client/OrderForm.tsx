@@ -97,12 +97,14 @@ export function OrderForm() {
     try {
       const repo = getRepository();
       const order = await repo.createOrder(input);
+      let filesFailed = false;
       if (files.length > 0) {
         setStatus("uploading");
-        await repo.attachFiles(order, files);
+        // The order already exists: a failed upload must not invite a duplicate order.
+        filesFailed = await repo.attachFiles(order, files).then(() => false, () => true);
       }
       clear();
-      router.push(`/invoice/${order.trackingCode}?new=1`);
+      router.push(`/invoice/${order.trackingCode}?new=1${filesFailed ? "&files=failed" : ""}`);
     } catch (err: unknown) {
       setErrors([err instanceof Error ? err.message : "Something went wrong. Please try again or message us on WhatsApp."]);
       setStatus("idle");

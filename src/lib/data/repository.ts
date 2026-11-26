@@ -3,10 +3,10 @@ import type { OrderAdvance } from "../orders";
 
 /**
  * Storage boundary for the whole app. Pages depend only on this interface;
- * `local` keeps data in the browser (demo), `supabase` uses the hosted database.
+ * `local` keeps data in the browser (demo), `cloudflare` calls our API (D1 + R2), `supabase` uses Supabase.
  */
 export interface R1vleRepository {
-  readonly mode: "local" | "supabase";
+  readonly mode: "local" | "supabase" | "cloudflare";
   listServices(): Promise<Service[]>;
   updateServicePrice(serviceId: string, priceUsd: number): Promise<Service>;
   createOrder(input: NewOrderInput): Promise<Order>;
