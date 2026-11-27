@@ -9,3 +9,6 @@ export function waLink(message: string): string {
 }
 
 export const DEFAULT_WA_MESSAGE = `Hi ${COMPANY.name}, I'd like to talk about a project.`;
+
+/** Canonical public URL (change NEXT_PUBLIC_SITE_URL when the custom domain is live). */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://r1vleops.vercel.app").replace(/\/$/, "");

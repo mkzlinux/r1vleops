@@ -11,6 +11,6 @@ export function POST(req: Request, ctx: { params: Promise<{ code: string }> }) {
     const { code } = await ctx.params;
     const { store, r2 } = await getBackend();
     const { added } = await store.reserveAttachments(code, parseFileMetas(await readJson(req)));
-    return { uploads: await Promise.all(added.map(async (a) => ({ key: a.key, url: await r2.uploadUrl(a.key) }))) };
+    return { uploads: await Promise.all(added.map(async (a) => ({ key: a.key, url: await r2.uploadUrl(a.key, a.size) }))) };
   });
 }

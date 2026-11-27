@@ -14,11 +14,11 @@ export function r2Client(cfg: R2Config) {
   const base = `https://${cfg.accountId}.r2.cloudflarestorage.com/${cfg.bucket}`;
   const objectUrl = (key: string) => `${base}/${key.split("/").map(encodeURIComponent).join("/")}`;
 
-  const presign = async (method: "GET" | "PUT", key: string, extra: Record<string, string> = {}): Promise<string> => {
+  const presign = async (method: "GET" | "PUT", key: string, extra: Record<string, string> = {}, headers: Record<string, string> = {}): Promise<string> => {
     const url = new URL(objectUrl(key));
     url.searchParams.set("X-Amz-Expires", String(PRESIGN_SECONDS));
     for (const [k, v] of Object.entries(extra)) url.searchParams.set(k, v);
-    const signed = await aws.sign(new Request(url, { method }), { aws: { signQuery: true } });
+    const signed = await aws.sign(new Request(url, { method, headers }), { aws: { signQuery: true, allHeaders: true } });
     return signed.url;
   };
 
@@ -35,7 +35,8 @@ export function r2Client(cfg: R2Config) {
 
   return {
     blobs,
-    uploadUrl: (key: string) => presign("PUT", key),
+    /** The signature covers Content-Length, so R2 rejects any upload that isn't exactly the declared size. */
+    uploadUrl: (key: string, size: number) => presign("PUT", key, {}, { "content-length": String(size) }),
     downloadUrl: (key: string, filename: string) =>
       presign("GET", key, { "response-content-disposition": `attachment; filename="${filename.replace(/[^\w.\- ]+/g, "_")}"` }),
     /** Lets browsers on the site PUT straight to presigned URLs. Idempotent. */

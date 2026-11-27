@@ -160,3 +160,18 @@ The price list is decided by the visitor's **location**, from Vercel's IP geoloc
 list. The browser can't switch it: `/api/orders` and `/api/quotes` apply the region on the server
 and store the detected country on each order (shown in the `/ops` order drawer). Phone numbers play
 no part. VPNs can mask a location, so a Zimbabwean on a foreign VPN simply sees international prices.
+
+## Security
+
+| Layer | What's in place |
+|-------|-----------------|
+| Headers (`next.config.ts`) | CSP (`default-src 'self'`, no plugins/frames/foreign forms, network only to self + R2), HSTS preload, `X-Frame-Options: DENY`, `nosniff`, strict referrer, Permissions-Policy, COOP; `X-Powered-By` removed. Private pages and all `/api` responses are `noindex` + `no-store`. |
+| Crawlers | `robots.txt` and `sitemap.xml` list public pages only (not a security control; private routes are protected server-side). `/.well-known/security.txt` for responsible disclosure. |
+| Tampering (Burp-style) | Prices, totals, region and invoice numbers are always computed on the server; request shapes are validated; client-sent prices/regions are ignored. |
+| CSRF | State-changing APIs accept JSON only, check `Origin` and Fetch-Metadata (`Sec-Fetch-Site`); the ops cookie is `HttpOnly; Secure; SameSite=Strict`. |
+| Injection / XSS | Parameterised SQL only (no string-built WHERE clauses); React escapes all output; no raw HTML injection. |
+| Brute force | Ops login: 5 tries / 15 min and 20 / day per IP, 800 ms delay on failure, failures logged; long random password, timing-safe compare, HMAC-signed expiring session. All public endpoints are rate limited per IP in D1. |
+| Uploads | Presigned R2 URLs expire in 15 min and are bound to the declared file size; extensions allow-listed; downloads forced as attachments; files never executed. |
+| Payments | Paynow hashes verified, amounts re-checked, one proof settles one payment, webhook rate limited. |
+
+Residual: `script-src` allows inline scripts (Next.js bootstrap); a per-request nonce would remove that but makes every page dynamic. VPNs can mask location for regional pricing. Rotate `OPS_SESSION_SECRET` to sign out every session.

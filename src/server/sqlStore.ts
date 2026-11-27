@@ -76,7 +76,8 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
     return map;
   };
 
-  const loadOrder = async (where: string, params: readonly SqlValue[], includeContact: boolean): Promise<Order | null> => {
+  /** Only these fixed lookups are allowed: never interpolate user input into SQL. */
+  const loadOrder = async (where: "id = ?" | "tracking_code = ?", params: readonly SqlValue[], includeContact: boolean): Promise<Order | null> => {
     const [row] = await sql.query<OrderRow>(`SELECT * FROM orders WHERE ${where} LIMIT 1`, params);
     if (!row) return null;
     const [updates, payments] = await Promise.all([updatesFor([row.id]), paymentsFor(sql, [row.id])]);

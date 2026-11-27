@@ -73,9 +73,16 @@ export async function requireSameOrigin(): Promise<void> {
   const origin = h.get("origin");
   const host = h.get("x-forwarded-host") || h.get("host");
   if (origin && host && new URL(origin).host !== host) throw new HttpError(403, "Cross-site request blocked.");
+  // Fetch Metadata: browsers label cross-site requests even when Origin is stripped.
+  const site = h.get("sec-fetch-site");
+  if (site && site !== "same-origin" && site !== "same-site" && site !== "none") throw new HttpError(403, "Cross-site request blocked.");
 }
 
+/** JSON bodies only (a cross-site HTML form can't send application/json without a CORS preflight), size-capped. */
 export async function readJson<T>(req: Request, maxBytes = 64_000): Promise<T> {
+  if (!/^application\/json\b/i.test(req.headers.get("content-type") ?? "")) throw new HttpError(415, "Send JSON.");
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > maxBytes) throw new HttpError(413, "Request too large.");
   const text = await req.text();
   if (text.length > maxBytes) throw new HttpError(413, "Request too large.");
   try { return JSON.parse(text) as T; } catch { throw new HttpError(400, "Invalid JSON."); }
