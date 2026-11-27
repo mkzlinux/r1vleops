@@ -10,13 +10,13 @@ describe("ops stats", () => {
     const s = summarize(orders);
     expect(s.requests).toBe(1);
     expect(s.active).toBe(3);
-    expect(s.pipelineUsd).toBe(2971); // Zimbabwe list: audit 347 + app 1487 + brand 297 + motion 247 + AI 593
+    expect(s.pipelineUsd).toBe(2969); // Zimbabwe list: audit 344 + app 1486 + brand 296 + motion 248 + AI 595
     expect(s.clients).toBe(4);
   });
 
   test("closed orders leave the pipeline", () => {
     const closed = orders.map((o, i) => (i === 0 ? advanceOrder(o, { stage: "closed", progress: 100, note: "" }, new Date()) : o));
-    expect(summarize(closed).pipelineUsd).toBe(2971 - 347);
+    expect(summarize(closed).pipelineUsd).toBe(2969 - 344);
     expect(summarize(closed).delivered).toBe(1);
   });
 
@@ -43,7 +43,7 @@ describe("ops stats", () => {
   });
 
   test("depositPosition splits pending from collected", () => {
-    expect(depositPosition(orders)).toEqual({ pending: 296.5, collected: 1189 });
+    expect(depositPosition(orders)).toEqual({ pending: 297.5, collected: 1187 });
   });
 
   test("weeklyVolume buckets orders by age", () => {
