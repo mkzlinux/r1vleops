@@ -19,7 +19,8 @@ export function priceNote(service: Service, region: Region): string | null {
   const tiers = service.regional?.[region];
   if (!tiers || tiers.length < 2) return null;
   const best = [...tiers].sort((a, b) => b.minQty - a.minQty)[0];
-  return `${formatUsd(best.priceUsd).replace(".00", "")} each for ${best.minQty}+`;
+  const amount = formatUsd(best.priceUsd).replace(".00", "");
+  return service.per ? `${amount} per ${service.per} from ${best.minQty} blocks` : `${amount} each for ${best.minQty}+`;
 }
 
 export function regionFromCountry(country: string | null | undefined): Region {

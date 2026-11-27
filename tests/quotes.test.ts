@@ -19,7 +19,7 @@ describe("negotiation tickets", () => {
 
   test("prices the bucket server-side and opens with a ticket code", () => {
     const q = buildQuote(request, { services: SERVICES, now: T0, random });
-    expect(q.listTotal).toBe(250 + 4 * 60);
+    expect(q.listTotal).toBe(247 + 4 * 57);
     expect(q.proposedTotal).toBe(300);
     expect(q.status).toBe("open");
     expect(isValidQuoteCode(q.code)).toBe(true);

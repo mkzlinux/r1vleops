@@ -48,9 +48,9 @@ describe("totals", () => {
   test("splits total into 50% deposit and balance", () => {
     const order = buildOrder(input, { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom });
     const t = orderTotals(order);
-    expect(t.total).toBe(3000);
-    expect(t.deposit).toBe(1500);
-    expect(t.balance).toBe(1500);
+    expect(t.total).toBe(1473 + 1463);
+    expect(t.deposit).toBe(1468);
+    expect(t.balance).toBe(1468);
   });
 });
 
@@ -70,7 +70,7 @@ describe("buildOrder", () => {
       { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom },
     );
     expect(order.lines.map((l) => l.qty)).toEqual([4, 1]);
-    expect(orderTotals(order).total).toBe(4 * 60 + 1500);
+    expect(orderTotals(order).total).toBe(4 * 57 + 1473);
     expect(order.departmentId).toBe("creative");
   });
 

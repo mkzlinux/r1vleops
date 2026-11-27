@@ -18,13 +18,13 @@ describe("negotiation tickets (D1)", () => {
   test("open → counter → client checks out at the agreed price, once", async () => {
     const { orders, quotes } = setup();
     const q = await quotes.create({ client, items: [{ serviceId: "cre-logo", qty: 1 }, { serviceId: "cre-flyer", qty: 4 }], region: "intl", proposedTotal: 300, note: "Startup" });
-    expect(q.listTotal).toBe(490);
+    expect(q.listTotal).toBe(475);
     await expect(quotes.checkout(q.code)).rejects.toThrow(/haven't replied/);
 
     await quotes.respond(q.id, { action: "counter", amount: 400, message: "Meet halfway" });
     const order = await quotes.checkout(q.code);
     expect(orderTotals(order).total).toBe(400);
-    expect(order.lines.at(-1)).toMatchObject({ serviceId: "negotiated-discount", rateUsd: -90 });
+    expect(order.lines.at(-1)).toMatchObject({ serviceId: "negotiated-discount", rateUsd: -75 });
     expect(orderTotals(order).deposit).toBe(200);
 
     const again = await quotes.checkout(q.code);

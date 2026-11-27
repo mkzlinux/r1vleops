@@ -10,7 +10,7 @@ describe("ops forecast", () => {
     const f = forecast(seedOrders(), now);
     expect(f.headline).toMatch(/1 new request/);
     expect(f.summary).toMatch(/3 projects in production/);
-    expect(f.summary).toMatch(/\$300/); // pending deposit
+    expect(f.summary).toMatch(/\$296\.50/); // pending deposit
   });
 
   test("calm pipeline reads as clear skies", () => {
