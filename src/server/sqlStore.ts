@@ -3,6 +3,8 @@ import type { BlobStore } from "@/lib/data/localRepository";
 import { SEED_WORKERS } from "@/lib/data/seed";
 import { MAX_FILES, attachmentKey, validateFiles } from "@/lib/files";
 import { clientKey } from "@/lib/opsStats";
+import { priceBucket } from "@/lib/bucket";
+import { adjustmentLine } from "@/lib/quotes";
 import { advanceOrder as applyAdvance, buildOrder, isValidTrackingCode, normalizeTrackingCode, validateNewOrder, type OrderAdvance } from "@/lib/orders";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, OrderLine, ProjectUpdate, Service, Worker } from "@/lib/types";
 import { paymentsFor } from "./paymentStore";
@@ -153,6 +155,16 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
         return order;
       }
       throw new StoreError("Could not allocate an invoice number. Please try again.");
+    },
+
+    /** Operator-created invoice from the dashboard; an agreed total below list adds an adjustment line. */
+    async createOrderAsOperator(input: NewOrderInput, agreedTotal: number | null): Promise<Order> {
+      if (agreedTotal === null) return this.createOrder(input);
+      const list = priceBucket(input.items, await listServices(), input.region).total;
+      if (agreedTotal > list) throw new StoreError("The agreed total can't be above the list price.");
+      let line: OrderLine | null;
+      try { line = adjustmentLine(list, agreedTotal, "Agreed price adjustment"); } catch (err: unknown) { throw new StoreError(err instanceof Error ? err.message : "Invalid total."); }
+      return this.createOrder(input, line ? [line] : []);
     },
 
     async findOrderByCode(code: string, opts: FindOptions): Promise<Order | null> {

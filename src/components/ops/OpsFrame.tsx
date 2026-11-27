@@ -7,7 +7,7 @@ import { Chip, Coin, Film, Plus, Shield, Users } from "../Icons";
 import { Brand } from "../site/SiteChrome";
 import { OpsBackground } from "./OpsBackground";
 
-export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq";
+export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq" | "new";
 
 const NAV: readonly { id: OpsNavId; href: string; label: string; icon: ReactNode }[] = [
   { id: "overview", href: "/ops", label: "Overview", icon: <GridIcon /> },
@@ -53,7 +53,7 @@ export function OpsFrame({ active, alerts = 0, children }: OpsFrameProps) {
           </nav>
           <div className="ops-actions">
             <span className={`ops-mode${isLive ? " live" : ""}`}><i />{isLive ? "Live" : "Demo"}</span>
-            <Link href="/pricing" className="ops-round" aria-label="New order" title="New order"><Plus size={18} /></Link>
+            <Link href="/ops/new" className={`ops-round${active === "new" ? " on" : ""}`} aria-label="New invoice or offer" title="New invoice or offer"><Plus size={18} /></Link>
             <Link href="/ops#requests" className="ops-round" aria-label={`${alerts} new requests`} title="New requests"><BellIcon />{alerts > 0 && <span className="ops-dot">{alerts}</span>}</Link>
             <Link href="/" className="ops-round hide-sm" aria-label="Public site" title="Public site"><ExitIcon /></Link>
             {isCloudflareBackend

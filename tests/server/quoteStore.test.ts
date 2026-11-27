@@ -41,3 +41,18 @@ describe("negotiation tickets (D1)", () => {
     await expect(quotes.create({ client, items: [{ serviceId: "cre-logo", qty: 1 }], region: "intl", proposedTotal: 999, note: "" })).rejects.toThrow(/less than/);
   });
 });
+
+describe("operator dashboard drafts", () => {
+  test("invoice with an agreed total and an offer the client can accept", async () => {
+    const { orders, quotes } = setup();
+    const order = await orders.createOrderAsOperator({ client, brief: "Walk-in", items: [{ serviceId: "cre-flyer", qty: 4 }], region: "zw" }, 60);
+    expect(orderTotals(order).total).toBe(60);
+    expect(order.lines.at(-1)).toMatchObject({ serviceId: "price-adjustment", rateUsd: -8 });
+    await expect(orders.createOrderAsOperator({ client, brief: "", items: [{ serviceId: "cre-logo", qty: 1 }], region: "zw" }, 999)).rejects.toThrow(/above/);
+
+    const offer = await quotes.createOffer({ client, items: [{ serviceId: "cre-logo", qty: 1 }], region: "intl", note: "" }, { offerTotal: 200, message: "As discussed" });
+    expect(offer.status).toBe("accepted");
+    const fromOffer = await quotes.checkout(offer.code);
+    expect(orderTotals(fromOffer).total).toBe(200);
+  });
+});

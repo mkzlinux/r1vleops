@@ -75,3 +75,11 @@ export function parseQuoteResponse(body: unknown): QuoteResponse {
   if (b.action === "counter") return { action: "counter", amount: num(b.amount, "amount"), message };
   return fail("action");
 }
+
+/** Operator dashboard: invoice or offer for a client, with the price list chosen by the operator. */
+export function parseOperatorDraft(body: unknown): { input: NewOrderInput; agreedTotal: number | null; message: string } {
+  const b = obj(body, "draft");
+  const input = parseNewOrder({ client: b.client, brief: b.brief ?? "", items: b.items, region: b.region });
+  const agreedTotal = b.agreedTotal === null || b.agreedTotal === undefined || b.agreedTotal === "" ? null : num(b.agreedTotal, "agreed total");
+  return { input, agreedTotal, message: optStr(b.message, "message", 2000) };
+}

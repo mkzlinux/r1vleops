@@ -58,6 +58,8 @@ export function createHttpRepository(fetcher: Fetch = (...args) => fetch(...args
     },
 
     findOrderByCode: (code) => call<Order | null>(`/api/track/${encodeURIComponent(code.trim())}`),
+    createOrderAsOperator: (input, agreedTotal) => call<Order>("/api/ops/orders", { method: "POST", body: { ...input, agreedTotal } }),
+    createOffer: (input, terms) => call<Quote>("/api/ops/offers", { method: "POST", body: { client: input.client, items: input.items, region: input.region, brief: input.note, agreedTotal: terms.offerTotal, message: terms.message } }),
     createQuote: (request) => call<Quote>("/api/quotes", { method: "POST", body: request }),
     findQuote: (code) => call<Quote | null>(`/api/quotes/${encodeURIComponent(code.trim())}`),
     checkoutQuote: (code) => call<Order>(`/api/quotes/${encodeURIComponent(code.trim())}/checkout`, { method: "POST", body: {} }),

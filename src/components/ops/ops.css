@@ -212,3 +212,22 @@ textarea.g-input { min-height: 72px; resize: vertical; }
 @media (max-width: 760px) { .cl-history { padding-left: 6px; } }
 .stage-pill.deal-open { background: var(--red); color: #fff; } .stage-pill.deal-countered, .stage-pill.deal-accepted { background: var(--signal); } .stage-pill.deal-converted { background: var(--ink); color: #fff; }
 .dc-deals .o-ico { background: var(--signal); color: var(--ink); }
+
+/* New invoice / offer (back office) */
+.ops-round.on { background: var(--signal); }
+.new-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); gap: 18px; align-items: start; }
+.new-list { max-height: none; }
+.new-add { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--rule); background: #fff; border-radius: var(--pill); padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.new-add:hover { background: var(--ink); color: #fff; }
+.new-step { display: inline-flex; align-items: center; gap: 4px; background: #fff; border-radius: var(--pill); padding: 4px; box-shadow: 0 1px 0 var(--rule); }
+.new-step button { width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--paper); display: grid; place-items: center; cursor: pointer; }
+.new-step button:disabled { opacity: 0.4; }
+.new-step span { min-width: 24px; text-align: center; font-weight: 700; }
+.new-summary { position: sticky; top: 90px; }
+.new-cta { width: 100%; justify-content: space-between; }
+.new-region button { flex: 1; }
+.new-done { display: grid; gap: 18px; margin-top: clamp(10px, 2vw, 22px); }
+.new-share { display: grid; gap: 14px; padding: 20px; }
+.new-done-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.quick button { font-family: inherit; }
+@media (max-width: 1100px) { .new-grid { grid-template-columns: minmax(0, 1fr); } .new-summary { position: static; } }

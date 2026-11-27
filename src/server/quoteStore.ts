@@ -1,7 +1,7 @@
 import { priceBucket } from "@/lib/bucket";
 import { clientKey } from "@/lib/opsStats";
 import { normalizeTrackingCode } from "@/lib/orders";
-import { buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type Quote, type QuoteRequest, type QuoteResponse, type QuoteStatus } from "@/lib/quotes";
+import { buildOffer, buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type OfferInput, type Quote, type QuoteRequest, type QuoteResponse, type QuoteStatus } from "@/lib/quotes";
 import type { Order, Region } from "@/lib/types";
 import type { SqlClient } from "./sql";
 import { StoreError, type SqlStore } from "./sqlStore";
@@ -28,6 +28,13 @@ export function createQuoteStore(sql: SqlClient, orders: SqlStore, now: () => Da
     return row ? toQuote(row) : null;
   };
 
+  const insert = async (q: Quote): Promise<void> => {
+    await sql.query(
+      "INSERT INTO quotes (id, code, created_at, client, client_email, region, items, lines, list_total, proposed_total, note, status, offer_total, reply, responded_at, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [q.id, q.code, q.createdAt, JSON.stringify(q.client), clientKey(q.client.email), q.region, JSON.stringify(q.items), JSON.stringify(q.lines), q.listTotal, q.proposedTotal, q.note, q.status, q.offerTotal, q.reply, q.respondedAt, q.validUntil],
+    );
+  };
+
   const save = async (q: Quote): Promise<void> => {
     await sql.query("UPDATE quotes SET status = ?, offer_total = ?, reply = ?, responded_at = ?, valid_until = ?, order_code = ? WHERE id = ?",
       [q.status, q.offerTotal, q.reply, q.respondedAt, q.validUntil, q.orderCode, q.id]);
@@ -43,10 +50,19 @@ export function createQuoteStore(sql: SqlClient, orders: SqlStore, now: () => Da
       } catch (err: unknown) {
         throw new StoreError(err instanceof Error ? err.message : "Invalid request.");
       }
-      await sql.query(
-        "INSERT INTO quotes (id, code, created_at, client, client_email, region, items, lines, list_total, proposed_total, note, status, reply) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', '')",
-        [q.id, q.code, q.createdAt, JSON.stringify(q.client), clientKey(q.client.email), q.region, JSON.stringify(q.items), JSON.stringify(q.lines), q.listTotal, q.proposedTotal, q.note],
-      );
+      await insert(q);
+      return q;
+    },
+
+    /** Operator-made offer from the dashboard: starts accepted at the chosen (or list) price. */
+    async createOffer(input: OfferInput, terms: { offerTotal: number | null; message: string }): Promise<Quote> {
+      let q: Quote;
+      try {
+        q = buildOffer(input, terms, { services: await orders.listServices(), now: now(), random: Math.random });
+      } catch (err: unknown) {
+        throw new StoreError(err instanceof Error ? err.message : "Invalid offer.");
+      }
+      await insert(q);
       return q;
     },
 

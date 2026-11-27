@@ -1,6 +1,6 @@
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
 import type { OrderAdvance } from "../orders";
-import type { Quote, QuoteRequest, QuoteResponse } from "../quotes";
+import type { OfferInput, Quote, QuoteRequest, QuoteResponse } from "../quotes";
 
 /**
  * Storage boundary for the whole app. Pages depend only on this interface;
@@ -29,5 +29,9 @@ export interface R1vleRepository {
   checkoutQuote(code: string): Promise<Order>;
   listQuotes(): Promise<Quote[]>;
   respondToQuote(id: string, response: QuoteResponse): Promise<Quote>;
+  /** Operator: invoice created from the dashboard (any price list; optional agreed total below list). */
+  createOrderAsOperator(input: NewOrderInput, agreedTotal: number | null): Promise<Order>;
+  /** Operator: a bucket sent to a client as an offer they accept with one tap. */
+  createOffer(input: OfferInput, terms: { offerTotal: number | null; message: string }): Promise<Quote>;
   hireWorker(input: NewWorkerInput): Promise<Worker>;
 }

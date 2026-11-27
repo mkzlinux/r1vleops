@@ -4,7 +4,7 @@ import type { OrderAdvance } from "../orders";
 import { attachmentKey, validateFiles } from "../files";
 import { clientKey } from "../opsStats";
 import { priceBucket } from "../bucket";
-import { buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type Quote, type QuoteRequest, type QuoteResponse } from "../quotes";
+import { adjustmentLine, buildOffer, buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type OfferInput, type Quote, type QuoteRequest, type QuoteResponse } from "../quotes";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, OrderLine, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 import { SEED_WORKERS, seedOrders } from "./seed";
@@ -104,6 +104,16 @@ export function createLocalRepository(
     isValidQuoteCode(code) ? (read().quotes ?? []).find((q) => q.code === normalizeTrackingCode(code)) ?? null : null;
 
   return {
+    async createOrderAsOperator(input: NewOrderInput, agreedTotal: number | null) {
+      if (agreedTotal === null) return placeOrder(input, []);
+      const list = priceBucket(input.items, services(read()), input.region).total;
+      if (agreedTotal > list) throw new Error("The agreed total can't be above the list price.");
+      const line = adjustmentLine(list, agreedTotal, "Agreed price adjustment");
+      return placeOrder(input, line ? [line] : []);
+    },
+    async createOffer(input: OfferInput, terms: { offerTotal: number | null; message: string }) {
+      return saveQuote(buildOffer(input, terms, { services: services(read()), now: now(), random: Math.random }));
+    },
     async createQuote(request: QuoteRequest) {
       return saveQuote(buildQuote(request, { services: services(read()), now: now(), random: Math.random }));
     },

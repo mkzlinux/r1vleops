@@ -61,6 +61,14 @@ Security: prices are always recomputed on the server; public tracking hides cont
 brief; public endpoints are rate limited per IP in D1; `/ops` APIs need an httpOnly, SameSite=strict,
 HMAC-signed session cookie and same-origin requests.
 
+## Back-office invoices and offers
+
+The **+** button in `/ops` opens `/ops/new`: pick services and quantities, choose Zimbabwe or
+International prices, enter the client (returning clients fill in from their email) and optionally
+an agreed total below list (added as an "Agreed price adjustment" line). Then either **Create invoice
+now** (order awaiting deposit) or **Send as offer** (a ticket that starts accepted; the client taps
+"Accept & get invoice"). Share via WhatsApp, email or copy link.
+
 ## Negotiation tickets
 
 The **Negotiate** button lives only in the bucket (before checkout). The client enters a budget and a

@@ -51,3 +51,23 @@ describe("negotiation tickets", () => {
     expect(discountLine(q, 380)).toBeNull();
   });
 });
+
+import { adjustmentLine, buildOffer } from "@/lib/quotes";
+
+describe("operator-made offers and invoices", () => {
+  test("an agreed total becomes a negative adjustment line; none when at or above list", () => {
+    expect(adjustmentLine(475, 400, "Agreed price")).toEqual({ serviceId: "price-adjustment", name: "Agreed price", qty: 1, rateUsd: -75 });
+    expect(adjustmentLine(475, 475, "x")).toBeNull();
+    expect(() => adjustmentLine(475, 0, "x")).toThrow();
+  });
+
+  test("an operator offer starts accepted at the chosen price, valid 14 days", () => {
+    const now = new Date("2026-11-28T09:00:00Z");
+    const q = buildOffer({ client, items: [{ serviceId: "cre-logo", qty: 1 }], region: "zw", note: "Walk-in client" }, { offerTotal: null, message: "As discussed" }, { services: SERVICES, now, random });
+    expect(q).toMatchObject({ status: "accepted", listTotal: 20, offerTotal: 20, reply: "As discussed" });
+    expect(canCheckoutQuote(q, now)).toBe(true);
+    const cheaper = buildOffer({ client, items: [{ serviceId: "cre-flyer", qty: 4 }], region: "intl", note: "" }, { offerTotal: 200, message: "" }, { services: SERVICES, now, random });
+    expect(cheaper.offerTotal).toBe(200);
+    expect(() => buildOffer({ client, items: [{ serviceId: "cre-logo", qty: 1 }], region: "intl", note: "" }, { offerTotal: 999, message: "" }, { services: SERVICES, now, random })).toThrow(/list/i);
+  });
+});

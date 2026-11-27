@@ -93,7 +93,7 @@ export function Overview() {
           <span className="eyebrow" suppressHydrationWarning>{greeting} · {now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</span>
           <h2 className="ops-title">Today at <span className="accent mark">R1VLE.</span></h2>
         </div>
-        <Link href="/pricing" className="btn btn-dark"><span>New order</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
+        <Link href="/ops/new" className="btn btn-dark"><span>New invoice</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
       </div>
 
       <div className="ops-grid">

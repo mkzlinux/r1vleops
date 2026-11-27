@@ -104,9 +104,37 @@ export function canCheckoutQuote(q: Quote, now: Date): boolean {
   return (q.status === "accepted" || q.status === "countered") && q.offerTotal !== null && !!q.validUntil && now.getTime() <= new Date(q.validUntil).getTime();
 }
 
+/** Negative line taking `listTotal` down to `target` (null when nothing to take off). */
+export function adjustmentLine(listTotal: number, target: number, label: string): OrderLine | null {
+  if (!Number.isFinite(target) || target <= 0) throw new Error("Enter an agreed total above zero.");
+  const diff = roundCents(listTotal - target);
+  return diff > 0 ? { serviceId: "price-adjustment", name: label, qty: 1, rateUsd: -diff } : null;
+}
+
 /** Discount that brings today's list total down to the agreed price (none if prices have since dropped below it). */
 export function discountLine(q: Quote, currentListTotal: number): OrderLine | null {
   if (q.offerTotal === null) return null;
   const diff = roundCents(currentListTotal - q.offerTotal);
   return diff > 0 ? { serviceId: "negotiated-discount", name: `Negotiated price (${q.code})`, qty: 1, rateUsd: -diff } : null;
+}
+
+export interface OfferInput {
+  readonly client: Client;
+  readonly items: readonly OrderItem[];
+  readonly region: Region;
+  readonly note: string;
+}
+
+/**
+ * An offer made by the operator from the dashboard: same shape as a negotiation ticket, but it
+ * starts "accepted" at the chosen price (or the list price), so the client only has to accept.
+ */
+export function buildOffer(input: OfferInput, terms: { offerTotal: number | null; message: string }, deps: { services: readonly Service[]; now: Date; random: () => number }): Quote {
+  const priced = priceBucket(input.items, deps.services, input.region);
+  if (priced.lines.length === 0) throw new Error("Add at least one item.");
+  const offer = terms.offerTotal ?? priced.total;
+  if (!Number.isFinite(offer) || offer <= 0) throw new Error("Enter an offer above zero.");
+  if (offer > priced.total) throw new Error("The offer can't be above the list price.");
+  const base = buildQuote({ ...input, proposedTotal: Math.min(offer, priced.total - 0.01) }, deps);
+  return respondToQuote({ ...base, proposedTotal: roundCents(offer) }, { action: "accept", message: terms.message }, deps.now);
 }
