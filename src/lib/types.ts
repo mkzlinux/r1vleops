@@ -29,6 +29,8 @@ export interface Service {
   readonly summary: string;
   readonly priceUsd: number;
   readonly unit: PriceUnit;
+  /** For "each" items, what one unit is (e.g. "30s"); defaults to a piece. */
+  readonly per?: string;
   readonly deliveryDays: number;
   readonly includes: readonly string[];
   /** Optional per-region price tiers; regions without tiers use `priceUsd`. */

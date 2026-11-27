@@ -26,7 +26,7 @@ function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
           <li key={service.id} className="bucket-line">
             <div className="bl-info">
               <b>{service.name}</b>
-              <small>{formatUsd(l.unitUsd)}{service.unit === "each" ? " each" : service.unit === "monthly" ? " / month" : ""}</small>
+              <small>{formatUsd(l.unitUsd)}{service.unit === "each" ? (service.per ? ` per ${service.per}` : " each") : service.unit === "monthly" ? " / month" : ""}</small>
             </div>
             {maxQtyFor(service) > 1 ? (
               <div className="mini-stepper">

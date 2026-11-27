@@ -161,9 +161,9 @@ export const SERVICES: readonly Service[] = [
     includes: ["Large-format files", "Mock-up preview", "2 revisions"],
   },
   {
-    id: "cre-motion", departmentId: "creative", name: "Motion Graphics (30s)",
-    summary: "Animated explainer, product promo or logo reveal up to 30 seconds.",
-    priceUsd: 800, unit: "fixed", deliveryDays: 7,
+    id: "cre-motion", departmentId: "creative", name: "Motion Graphics · 30s block",
+    summary: "Animated explainer, product promo or logo reveal, priced per 30 seconds: a 60s video is 2 blocks, 90s is 3.",
+    priceUsd: 800, unit: "each", per: "30s", deliveryDays: 7,
     regional: { zw: [{ minQty: 1, priceUsd: 250 }] },
     includes: ["Script + storyboard", "2 revision rounds", "Social cut-downs"],
   },
@@ -187,8 +187,8 @@ export function servicesFor(id: DepartmentId, services: readonly Service[] = SER
 }
 
 /** Max quantity per bucket line: packs are one-offs, retainers are months, "each" items are pieces. */
-export function maxQtyFor(service: Pick<Service, "unit">): number {
-  if (service.unit === "each") return 50;
+export function maxQtyFor(service: Pick<Service, "unit" | "per">): number {
+  if (service.unit === "each") return service.per ? 20 : 50;
   if (service.unit === "monthly") return 12;
   return 1;
 }

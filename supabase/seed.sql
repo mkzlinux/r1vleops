@@ -15,7 +15,7 @@ insert into public.services (id, department_id, name, summary, price_usd, unit, 
   ('cre-card', 'creative', 'Business Card', 'Two-sided business card design, ready for the printer.', 50, 'each', 2, array['Front + back','Print-ready PDF','QR code option']::text[], 12, '{"zw":[{"minQty":1,"priceUsd":25}]}'::jsonb),
   ('cre-brochure', 'creative', 'Menu / Brochure', 'Multi-panel menu, brochure or company profile layout.', 150, 'each', 4, array['Up to 4 panels','Print + digital','2 revisions']::text[], 13, '{"zw":[{"minQty":1,"priceUsd":70}]}'::jsonb),
   ('cre-banner', 'creative', 'Banner / Billboard', 'Roll-up banner, billboard or shopfront signage artwork.', 120, 'each', 3, array['Large-format files','Mock-up preview','2 revisions']::text[], 14, '{"zw":[{"minQty":1,"priceUsd":60}]}'::jsonb),
-  ('cre-motion', 'creative', 'Motion Graphics (30s)', 'Animated explainer, product promo or logo reveal up to 30 seconds.', 800, 'fixed', 7, array['Script + storyboard','2 revision rounds','Social cut-downs']::text[], 15, '{"zw":[{"minQty":1,"priceUsd":250}]}'::jsonb),
+  ('cre-motion', 'creative', 'Motion Graphics · 30s block', 'Animated explainer, product promo or logo reveal, priced per 30 seconds: a 60s video is 2 blocks, 90s is 3.', 800, 'each', 7, array['Script + storyboard','2 revision rounds','Social cut-downs']::text[], 15, '{"zw":[{"minQty":1,"priceUsd":250}]}'::jsonb),
   ('cre-cinematic', 'creative', 'Cinematic Production', '3D or live-action cinematic for launches, real estate or campaigns.', 2500, 'from', 21, array['Concept + previs','3D / CGI render','Colour grade + sound','4K master']::text[], 16, '{"zw":[{"minQty":1,"priceUsd":700}]}'::jsonb)
 on conflict (id) do update set regional = excluded.regional, price_usd = excluded.price_usd;
 

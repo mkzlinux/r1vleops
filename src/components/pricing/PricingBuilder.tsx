@@ -23,7 +23,7 @@ export function priceLabel(s: Service, region: Region = "intl"): { amount: strin
   switch (s.unit) {
     case "from": return { amount, suffix: "+", kicker: "Starting at" };
     case "monthly": return { amount, suffix: "/mo", kicker: "Retainer" };
-    case "each": return { amount, suffix: "/each", kicker: "Per piece" };
+    case "each": return s.per ? { amount, suffix: `/${s.per}`, kicker: `Per ${s.per} block` } : { amount, suffix: "/each", kicker: "Per piece" };
     default: return { amount, suffix: "", kicker: "Fixed price" };
   }
 }

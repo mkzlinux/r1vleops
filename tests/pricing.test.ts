@@ -52,3 +52,15 @@ describe("regional pricing", () => {
     expect(isZimbabweNumber("+1 555 0100")).toBe(false);
   });
 });
+
+describe("motion graphics per 30 seconds", () => {
+  test("a 90-second video is three 30s blocks", async () => {
+    const { priceBucket } = await import("@/lib/bucket");
+    const { maxQtyFor } = await import("@/lib/catalog");
+    const motion = serviceById("cre-motion")!;
+    expect(motion).toMatchObject({ unit: "each", per: "30s" });
+    expect(priceBucket([{ serviceId: "cre-motion", qty: 3 }], SERVICES).total).toBe(3 * 800);
+    expect(priceBucket([{ serviceId: "cre-motion", qty: 3 }], SERVICES, "zw").total).toBe(3 * 250);
+    expect(maxQtyFor(motion)).toBe(20);
+  });
+});
