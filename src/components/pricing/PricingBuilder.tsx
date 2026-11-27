@@ -82,7 +82,7 @@ function ItemCard({ service, index }: { service: Service; index: number }) {
 
 export function PricingBuilder() {
   const params = useSearchParams();
-  const { services, add, region, setRegion } = useBucket();
+  const { services, add, region, country } = useBucket();
   const initial = params.get("dept");
   const [filter, setFilter] = useState<Filter>(DEPARTMENTS.some((d) => d.id === initial) ? (initial as DepartmentId) : "all");
 
@@ -101,12 +101,10 @@ export function PricingBuilder() {
   return (
     <div className="builder">
       <div className="builder-main">
-        <div className="region-bar" role="radiogroup" aria-label="Price list">
+        <div className="region-bar" aria-live="polite">
           <span>Prices for</span>
-          {REGIONS.map((r) => (
-            <button key={r.id} type="button" role="radio" aria-checked={region === r.id} onClick={() => setRegion(r.id)}>{r.label}</button>
-          ))}
-          {region === "zw" && <small>Zimbabwe prices need a +263 WhatsApp number at checkout.</small>}
+          <b className="region-pill">{REGIONS.find((r) => r.id === region)?.label ?? "International"}</b>
+          <small>{country ? `Based on your location (${country}).` : "Based on your location."} Zimbabwe prices apply to clients in Zimbabwe.</small>
         </div>
         <div className="filter-bar" role="tablist" aria-label="Filter by department">
           {[{ id: "all" as const, name: "Everything" }, ...DEPARTMENTS].map((d) => (

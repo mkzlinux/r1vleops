@@ -28,7 +28,7 @@ export interface UploadFile extends FileMeta {
 interface OrderRow {
   id: string; tracking_code: string; invoice_no: string; created_at: string; department_id: Order["departmentId"];
   client: string; brief: string; lines: string; deposit_pct: number; stage: Order["stage"]; progress: number;
-  assigned_worker_id: string | null; region: Order["region"]; attachments: string;
+  assigned_worker_id: string | null; region: Order["region"]; attachments: string; country?: string | null;
 }
 interface UpdateRow { order_id: string; at: string; stage: Order["stage"]; progress: number; note: string }
 interface WorkerRow { id: string; kind: Worker["kind"]; name: string; role: string; department_id: Worker["departmentId"]; email: string; status: Worker["status"]; joined_at: string }
@@ -42,7 +42,7 @@ function toOrder(r: OrderRow, updates: readonly ProjectUpdate[], includeContact:
     client: includeContact ? client : { name: client.name, company: client.company, email: "", whatsapp: "" },
     brief: includeContact ? r.brief : "",
     lines: JSON.parse(r.lines), depositPct: r.deposit_pct, stage: r.stage, progress: r.progress,
-    assignedWorkerId: includeContact ? r.assigned_worker_id : null, region: r.region,
+    assignedWorkerId: includeContact ? r.assigned_worker_id : null, region: r.region, country: r.country ?? null,
     attachments: JSON.parse(r.attachments) as Attachment[], updates,
   };
 }
@@ -141,8 +141,8 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
         const order = extraLines.length > 0 ? { ...built, lines: [...built.lines, ...extraLines] } : built;
         try {
           await sql.query(
-            "INSERT INTO orders (id, tracking_code, invoice_no, created_at, department_id, client, brief, lines, deposit_pct, stage, progress, assigned_worker_id, region, attachments, client_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, '[]', ?)",
-            [order.id, order.trackingCode, order.invoiceNo, order.createdAt, order.departmentId, JSON.stringify(order.client), order.brief, JSON.stringify(order.lines), order.depositPct, order.stage, order.progress, order.region ?? "intl", clientKey(order.client.email)],
+            "INSERT INTO orders (id, tracking_code, invoice_no, created_at, department_id, client, brief, lines, deposit_pct, stage, progress, assigned_worker_id, region, attachments, client_email, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, '[]', ?, ?)",
+            [order.id, order.trackingCode, order.invoiceNo, order.createdAt, order.departmentId, JSON.stringify(order.client), order.brief, JSON.stringify(order.lines), order.depositPct, order.stage, order.progress, order.region ?? "intl", clientKey(order.client.email), order.country ?? null],
           );
         } catch (err: unknown) {
           if (err instanceof Error && /unique/i.test(err.message) && attempt < 3) continue; // invoice/code collision: retry

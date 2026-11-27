@@ -1,5 +1,5 @@
 import { COMPANY, maxQtyFor } from "./catalog";
-import { isZimbabweNumber, unitPrice } from "./pricing";
+import { unitPrice } from "./pricing";
 import type { NewOrderInput, Order, OrderLine, ProjectUpdate, Service, Stage } from "./types";
 
 /** Alphabet without 0/O/1/I to keep codes readable over WhatsApp or phone. */
@@ -80,9 +80,6 @@ export function validateNewOrder(input: NewOrderInput): string[] {
   if (client.whatsapp.replace(/\D/g, "").length < MIN_PHONE_DIGITS) {
     errors.push("Please enter a WhatsApp number with country code.");
   }
-  if (input.region === "zw" && client.whatsapp.trim() !== "" && !isZimbabweNumber(client.whatsapp)) {
-    errors.push("Zimbabwe pricing needs a Zimbabwean (+263) WhatsApp number. Switch prices to International to continue.");
-  }
   if (input.items.length === 0) errors.push("Pick at least one service.");
   if (input.items.length > 30) errors.push("Too many different items in one order (30 max).");
   if (input.items.some((i) => !Number.isInteger(i.qty) || i.qty < 1)) errors.push("Every item needs a quantity of at least 1.");
@@ -136,6 +133,7 @@ export function buildOrder(input: NewOrderInput, deps: BuildOrderDeps): Order {
     assignedWorkerId: null,
     updates: [firstUpdate],
     region: input.region,
+    country: input.country ?? null,
   };
 }
 

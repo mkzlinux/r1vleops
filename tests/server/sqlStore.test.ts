@@ -24,8 +24,11 @@ describe("SQL store (Cloudflare D1 schema)", () => {
     expect(b.invoiceNo).toBe("R1VLE-INV-2026-002");
   });
 
-  test("rejects Zimbabwe pricing without a +263 number", async () => {
-    await expect(store().createOrder({ client: { ...client, whatsapp: "+44 7700 900123" }, brief: "", items: [{ serviceId: "cre-flyer", qty: 1 }], region: "zw" })).rejects.toThrow(/\+263/);
+  test("stores the detected country with the order; the phone number doesn't matter", async () => {
+    const s = store();
+    const o = await s.createOrder({ client: { ...client, whatsapp: "+44 7700 900123" }, brief: "", items: [{ serviceId: "cre-flyer", qty: 1 }], region: "zw", country: "ZW" });
+    expect(o.lines[0].rateUsd).toBe(20);
+    expect((await s.findOrderByCode(o.trackingCode, { includeContact: true }))?.country).toBe("ZW");
   });
 
   test("public tracking hides contact details; admin view keeps them", async () => {

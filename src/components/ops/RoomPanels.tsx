@@ -66,6 +66,7 @@ export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign, onRe
       </div>
       {order.brief && <p className="dr-brief">{order.brief}</p>}
       {(order.client.email || order.client.whatsapp) && <p className="dim">{order.client.email} · {order.client.whatsapp}</p>}
+      <p className="dim">{order.region === "zw" ? "Zimbabwe prices" : "International prices"}{order.country ? ` · placed from ${order.country}` : ""}</p>
       {(order.attachments?.length ?? 0) > 0 && (
         <div className="dr-files">
           <small>Client files</small>

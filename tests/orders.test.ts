@@ -78,13 +78,14 @@ describe("buildOrder", () => {
     expect(validateNewOrder({ ...input, items: [{ serviceId: "cre-flyer", qty: 0 }], region: "intl" as const })).toEqual(expect.arrayContaining([expect.stringMatching(/quantity/i)]));
   });
 
-  test("Zimbabwe orders use local tiers and require a +263 number", () => {
+  test("Zimbabwe orders use local tiers; the phone number doesn't decide the price list", () => {
     const zw = { client, brief: "", items: [{ serviceId: "cre-flyer", qty: 3 }], region: "zw" as const };
     const order = buildOrder(zw, { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom });
     expect(order.lines[0].rateUsd).toBe(17);
     expect(order.region).toBe("zw");
     expect(validateNewOrder(zw)).toEqual([]);
-    expect(validateNewOrder({ ...zw, client: { ...client, whatsapp: "+27 82 123 4567" } })[0]).toMatch(/\+263/);
+    expect(validateNewOrder({ ...zw, client: { ...client, whatsapp: "+27 82 123 4567" } })).toEqual([]);
+    expect(buildOrder({ ...zw, country: "ZW" }, { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-25"), random: fixedRandom }).country).toBe("ZW");
   });
 
   test("throws for unknown services", () => {

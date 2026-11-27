@@ -26,8 +26,3 @@ export function regionFromCountry(country: string | null | undefined): Region {
   return country?.toUpperCase() === "ZW" ? "zw" : "intl";
 }
 
-/** +263…, 263… or local 07… mobile numbers count as Zimbabwean. */
-export function isZimbabweNumber(raw: string): boolean {
-  const digits = raw.replace(/\D/g, "");
-  return digits.startsWith("263") || /^07\d{8}$/.test(digits);
-}

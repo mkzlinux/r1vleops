@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS orders (
   assigned_worker_id TEXT REFERENCES workers (id) ON DELETE SET NULL,
   region TEXT NOT NULL DEFAULT 'intl' CHECK (region IN ('zw', 'intl')),
   attachments TEXT NOT NULL DEFAULT '[]',
-  client_email TEXT
+  client_email TEXT,
+  country TEXT
 );
 CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC);
 

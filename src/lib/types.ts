@@ -94,6 +94,8 @@ export interface Order {
   readonly updates: readonly ProjectUpdate[];
   /** Price list the order was quoted on (missing on older orders = international). */
   readonly region?: Region;
+  /** ISO country detected from the client's IP when the order was placed. */
+  readonly country?: string | null;
   readonly attachments?: readonly Attachment[];
   /** Online payments (Paynow / USDC) made against this invoice. */
   readonly payments?: readonly Payment[];
@@ -122,6 +124,8 @@ export interface NewOrderInput {
   readonly brief: string;
   readonly items: readonly OrderItem[];
   readonly region: Region;
+  /** ISO country the order came from (detected from the visitor's IP on the server). */
+  readonly country?: string | null;
 }
 
 export interface NewWorkerInput {

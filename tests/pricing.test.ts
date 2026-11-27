@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { isZimbabweNumber, priceNote, regionFromCountry, unitPrice } from "@/lib/pricing";
+import { priceNote, regionFromCountry, unitPrice } from "@/lib/pricing";
 import { SERVICES, serviceById } from "@/lib/catalog";
 
 const flyer = serviceById("cre-flyer")!;
@@ -44,13 +44,6 @@ describe("regional pricing", () => {
     expect(regionFromCountry(null)).toBe("intl");
   });
 
-  test("recognises Zimbabwean WhatsApp numbers", () => {
-    expect(isZimbabweNumber("+263 77 123 4567")).toBe(true);
-    expect(isZimbabweNumber("263771234567")).toBe(true);
-    expect(isZimbabweNumber("0771234567")).toBe(true);
-    expect(isZimbabweNumber("+27 82 123 4567")).toBe(false);
-    expect(isZimbabweNumber("+1 555 0100")).toBe(false);
-  });
 });
 
 describe("motion graphics per 30 seconds", () => {

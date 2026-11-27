@@ -1,4 +1,4 @@
-import { getBackend, rateLimit, readJson, requireSameOrigin, respond } from "@/server/backend";
+import { getBackend, rateLimit, readJson, requestLocation, requireSameOrigin, respond } from "@/server/backend";
 import { toPublicQuote } from "@/server/quoteStore";
 import { parseQuoteRequest } from "@/server/validate";
 
@@ -9,6 +9,7 @@ export function POST(req: Request) {
   return respond(async () => {
     await requireSameOrigin();
     await rateLimit("quote", { limit: 6, windowMs: 60 * 60 * 1000 });
-    return toPublicQuote(await (await getBackend()).quotes.create(parseQuoteRequest(await readJson(req))));
+    const { region } = await requestLocation();
+    return toPublicQuote(await (await getBackend()).quotes.create({ ...parseQuoteRequest(await readJson(req)), region }));
   }, 201);
 }

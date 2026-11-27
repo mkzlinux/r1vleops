@@ -147,8 +147,8 @@ always taken from the database, and tracking never exposes client contact detail
 
 ## Regional pricing
 
-Visitors are detected as Zimbabwe or International (`/api/region`, from Vercel's IP country header),
-and can switch on `/pricing`. Services may define `regional` tiers in `src/lib/catalog.ts`, e.g.
-Zimbabwe flyers `$20` for one and `$17` each for 2+, and Zimbabwe logos `$20`. Everything else uses
-the list price. Zimbabwe prices only check out with a +263 WhatsApp number; the database enforces the
-same rule and computes prices server-side.
+The price list is decided by the visitor's **location**, from Vercel's IP geolocation
+(`x-vercel-ip-country`): Zimbabwe (`ZW`) gets the Zimbabwe list, everyone else the international
+list. The browser can't switch it: `/api/orders` and `/api/quotes` apply the region on the server
+and store the detected country on each order (shown in the `/ops` order drawer). Phone numbers play
+no part. VPNs can mask a location, so a Zimbabwean on a foreign VPN simply sees international prices.

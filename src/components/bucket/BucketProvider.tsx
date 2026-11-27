@@ -9,7 +9,6 @@ import type { Region, Service } from "@/lib/types";
 import { flyToBucket } from "./flyToBucket";
 
 const STORAGE_KEY = "r1vle-bucket-v1";
-const REGION_KEY = "r1vle-region-v1";
 
 interface BucketContextValue {
   readonly bucket: Bucket;
@@ -18,9 +17,10 @@ interface BucketContextValue {
   readonly count: number;
   /** Increments every time something lands in the bucket, so icons can play a bump animation. */
   readonly pulse: number;
-  /** Price list in use: detected from the visitor's country, overridable on the pricing page. */
+  /** Price list in use: decided by the visitor's location (IP), never by the browser. */
   readonly region: Region;
-  setRegion(region: Region): void;
+  /** Country detected from the visitor's IP (null when unknown). */
+  readonly country: string | null;
   add(serviceId: string, from?: HTMLElement | null): void;
   setQty(serviceId: string, qty: number): void;
   remove(serviceId: string): void;
@@ -43,21 +43,16 @@ export function BucketProvider({ children }: { children: ReactNode }) {
   const [services, setServices] = useState<readonly Service[]>(SERVICES);
   const [pulse, setPulse] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [region, setRegionState] = useState<Region>("intl");
+  // Price list follows the visitor's location (server-side IP geolocation). It can't be switched
+  // in the browser, and the server applies the same rule when an order or ticket is placed.
+  const [region, setRegion] = useState<Region>("intl");
+  const [country, setCountry] = useState<string | null>(null);
 
   useEffect(() => {
-    let stored: string | null = null;
-    try { stored = window.localStorage.getItem(REGION_KEY); } catch { /* storage unavailable */ }
-    if (stored === "zw" || stored === "intl") { setRegionState(stored); return; }
     fetch("/api/region")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { country?: string | null } | null) => setRegionState(regionFromCountry(d?.country)))
+      .then((d: { country?: string | null } | null) => { setCountry(d?.country ?? null); setRegion(regionFromCountry(d?.country)); })
       .catch(() => undefined);
-  }, []);
-
-  const setRegion = useCallback((r: Region) => {
-    setRegionState(r);
-    try { window.localStorage.setItem(REGION_KEY, r); } catch { /* per-tab only */ }
   }, []);
 
   useEffect(() => {
@@ -83,7 +78,7 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     services,
     priced: priceBucket(bucket, services, region),
     region,
-    setRegion,
+    country,
     count: bucketCount(bucket),
     pulse,
     add,
@@ -91,7 +86,7 @@ export function BucketProvider({ children }: { children: ReactNode }) {
     remove: (id) => setBucket((b) => removeFromBucket(b, id)),
     clear: () => setBucket([]),
     qtyOf: (id) => bucket.find((l) => l.serviceId === id)?.qty ?? 0,
-  }), [bucket, services, pulse, add, region, setRegion]);
+  }), [bucket, services, pulse, add, region, country]);
 
   return <BucketContext.Provider value={value}>{children}</BucketContext.Provider>;
 }

@@ -64,7 +64,7 @@ function FileDrop({ files, onChange, isHighlighted }: { files: File[]; onChange:
 export function OrderForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const { bucket, services, priced, region, setRegion, add, clear } = useBucket();
+  const { bucket, services, priced, region, add, clear } = useBucket();
   const [client, setClient] = useState<Client>(EMPTY_CLIENT);
   const [brief, setBrief] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -164,9 +164,6 @@ export function OrderForm() {
         <div><small>Total</small><div className="big total">{formatUsd(priced.total)}</div></div>
         <p className="sum-note">Want a different price? <Link href="/pricing">Negotiate from your bucket</Link> before checking out.</p>
         {errors.length > 0 && <div className="error-box" role="alert">{errors.map((x) => <div key={x}>{x}</div>)}</div>}
-        {region === "zw" && errors.some((x) => x.includes("+263")) && (
-          <button type="button" className="btn btn-outline-signal" style={{ justifyContent: "center" }} onClick={() => { setRegion("intl"); setErrors([]); }}>Use international prices</button>
-        )}
         <button className="btn btn-lime" type="submit" disabled={status !== "idle"}>
           <span>{status === "placing" ? "Generating invoice…" : status === "uploading" ? "Uploading files…" : "Place order & get invoice"}</span><span className="arrow"><ArrowUpRight size={16} /></span>
         </button>

@@ -6,6 +6,8 @@ import { r2Client, r2SecretFromToken } from "./r2";
 import { hitRateLimit, type RateLimitOptions } from "./rateLimit";
 import { d1HttpClient, type SqlClient } from "./sql";
 import { EVM_CHAIN_IDS, USDC_CHAINS, USDC_CHAIN_IDS, type UsdcChain } from "@/lib/payments";
+import { regionFromCountry } from "@/lib/pricing";
+import type { Region } from "@/lib/types";
 import { createPaymentService, type PaymentService } from "./paymentService";
 import { paynowClient } from "./paynow";
 import { createQuoteStore, type QuoteStore } from "./quoteStore";
@@ -38,6 +40,16 @@ export function getBackend(): Promise<Backend> {
     return { sql, r2, store, payments: paymentServiceFor(store), quotes: createQuoteStore(sql, store) };
   })().catch((err: unknown) => { backend = null; throw err; });
   return backend;
+}
+
+/**
+ * Where the visitor is, from Vercel's IP geolocation. This, not anything the browser sends,
+ * decides Zimbabwe vs international prices. (VPNs can mask a location; the country is stored
+ * on each order so the operator can see it.)
+ */
+export async function requestLocation(): Promise<{ country: string | null; region: Region }> {
+  const country = (await headers()).get("x-vercel-ip-country")?.toUpperCase() || null;
+  return { country, region: regionFromCountry(country) };
 }
 
 export async function clientIp(): Promise<string> {

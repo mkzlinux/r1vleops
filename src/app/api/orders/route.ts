@@ -1,4 +1,4 @@
-import { getBackend, rateLimit, readJson, requireSameOrigin, respond } from "@/server/backend";
+import { getBackend, rateLimit, readJson, requestLocation, requireSameOrigin, respond } from "@/server/backend";
 import { parseNewOrder } from "@/server/validate";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,8 @@ export function POST(req: Request) {
   return respond(async () => {
     await requireSameOrigin();
     await rateLimit("order", { limit: 8, windowMs: 60 * 60 * 1000 });
-    const input = parseNewOrder(await readJson(req));
+    const location = await requestLocation();
+    const input = { ...parseNewOrder(await readJson(req)), region: location.region, country: location.country };
     return (await getBackend()).store.createOrder(input);
   }, 201);
 }
