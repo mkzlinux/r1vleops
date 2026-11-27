@@ -10,13 +10,13 @@ import { sqliteClient } from "./helpers";
 const KEY = "integration-key-123";
 const client = { name: "Rudo M", company: "", email: "rudo@example.com", whatsapp: "+263 77 123 4567" };
 const T0 = new Date("2026-11-27T10:00:00Z");
-const WALLETS = { base: "0x1111111111111111111111111111111111111111", bsc: "0x2222222222222222222222222222222222222222", xrpl: "rWALLETxxxxxxxxxxxxxxxxxxxxxxxx" };
+const WALLETS = { base: "0x1111111111111111111111111111111111111111", bsc: "0x2222222222222222222222222222222222222222", xrpl: "rWALLETxxxxxxxxxxxxxxxxxxxxxxxx", solana: "So1WALLET", stellar: "GWALLET" };
 
 async function signed(fields: [string, string][]): Promise<string> {
   return toFormBody([...fields, ["hash", await paynowHash(fields, KEY)]]);
 }
 
-function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknown[]; clock?: { t: Date }; testEmail?: string } = {}) {
+function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknown[]; solanaTxs?: unknown[]; stellarRecords?: unknown[]; clock?: { t: Date }; testEmail?: string } = {}) {
   const clock = opts.clock ?? { t: T0 };
   const now = () => clock.t;
   const sql = sqliteClient();
@@ -35,7 +35,11 @@ function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknow
       const amount = parseForm(ref).find(([k]) => k === "amount")![1];
       return new Response(await signed([["reference", reference], ["paynowreference", "PN1"], ["amount", amount], ["status", opts.paynowStatus ?? "Sent"], ["pollurl", url]]));
     }
+    if (url.startsWith("https://horizon.test/")) return Response.json({ _embedded: { records: opts.stellarRecords ?? [] } });
     const req = JSON.parse(body);
+    if (req.method === "getTokenAccountsByOwner") return Response.json({ result: { value: [{ pubkey: "ATA1" }] } });
+    if (req.method === "getSignaturesForAddress") return Response.json({ result: (opts.solanaTxs ?? []).map((_, i) => ({ signature: `sig${i}`, blockTime: Math.floor(Date.now() / 1000) + 10_000_000, err: null })) });
+    if (req.method === "getTransaction") return Response.json({ result: (opts.solanaTxs ?? [])[Number(String(req.params[0]).slice(3))] ?? null });
     if (req.method === "eth_blockNumber") { head += 50; return Response.json({ result: `0x${head.toString(16)}` }); }
     if (req.method === "eth_getLogs") return Response.json({ result: opts.logs ?? [] });
     if (req.method === "account_tx") return Response.json({ result: { status: "success", transactions: opts.xrplTxs ?? [] } });
@@ -45,7 +49,7 @@ function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknow
     store, payments: createPaymentStore(sql, now), now, siteUrl: "https://r1vle.test",
     paynow: paynowClient({ integrationId: "1201", integrationKey: KEY }, fakeFetch),
     paynowTestEmail: opts.testEmail ?? null,
-    wallets: WALLETS, rpc: { base: "https://rpc.base.test", bsc: "https://rpc.bsc.test", xrpl: "https://rpc.xrpl.test" }, fetcher: fakeFetch,
+    wallets: WALLETS, rpc: { base: "https://rpc.base.test", bsc: "https://rpc.bsc.test", xrpl: "https://rpc.xrpl.test", solana: "https://rpc.sol.test", stellar: "https://horizon.test" }, fetcher: fakeFetch,
   });
   return { store, service, sent, clock };
 }
@@ -55,7 +59,7 @@ const placeOrder = (store: ReturnType<typeof createSqlStore>) =>
 
 describe("payment service", () => {
   test("reports what is available", () => {
-    expect(setup().service.available()).toEqual({ paynow: true, paynowTest: false, usdc: ["base", "bsc", "xrpl"] });
+    expect(setup().service.available()).toEqual({ paynow: true, paynowTest: false, usdc: ["bsc", "base", "solana", "stellar", "xrpl"] });
   });
 
   test("EcoCash: pushes to the client's phone with the invoice amount and a signed request", async () => {
@@ -183,5 +187,28 @@ describe("payment service", () => {
     const order = await placeOrder(store);
     await service.start(order.trackingCode, { kind: "deposit", method: "paynow", channel: "ecocash", phone: "0771111111" });
     expect(Object.fromEntries(parseForm(sent[0].body)).authemail).toBe("merchant@example.com");
+  });
+
+  test("USDC on Solana: unique amount, confirmed by the wallet's exact USDC balance increase", async () => {
+    const txs: unknown[] = [];
+    const { store, service } = setup({ solanaTxs: txs });
+    const order = await placeOrder(store);
+    const { payment } = await service.start(order.trackingCode, { kind: "deposit", method: "usdc", channel: "solana" });
+    expect(payment.payTo).toBe(WALLETS.solana);
+    const units = payment.payAmount!.replace(".", "");
+    txs.push({ transaction: { signatures: ["SOLSIG"] }, meta: { err: null, preTokenBalances: [], postTokenBalances: [{ mint: USDC_CHAINS.solana.mint, owner: WALLETS.solana, uiTokenAmount: { amount: String(BigInt(units)) } }] } });
+    const paid = await service.refresh(order.trackingCode, payment.id);
+    expect(paid.status).toBe("paid");
+    expect(paid.proof).toBe("sig0");
+  });
+
+  test("USDC on Stellar uses a memo", async () => {
+    const records: unknown[] = [];
+    const { store, service } = setup({ stellarRecords: records });
+    const order = await placeOrder(store);
+    const { payment } = await service.start(order.trackingCode, { kind: "deposit", method: "usdc", channel: "stellar" });
+    expect(payment.destinationTag).toBeGreaterThan(100000);
+    records.push({ type: "payment", to: WALLETS.stellar, asset_code: "USDC", asset_issuer: USDC_CHAINS.stellar.issuer, amount: "25.5000000", transaction_successful: true, transaction_hash: "XLMHASH", transaction: { memo: String(payment.destinationTag) } });
+    expect((await service.refresh(order.trackingCode, payment.id)).status).toBe("paid");
   });
 });

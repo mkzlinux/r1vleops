@@ -70,8 +70,9 @@ payment shows in `/ops` (order drawer, with a Re-check button) and as a receipt 
 | Option | How it's confirmed |
 |--------|--------------------|
 | Paynow: EcoCash, OneMoney, InnBucks (push to phone) and cards (Paynow page) | Paynow's signed status update to `/api/paynow/result`, plus polling. Hash verified (SHA-512) and the paid amount must cover what's due |
-| USDC on Base or BNB Smart Chain (BEP-20) | Each payment gets a unique amount (up to $0.009999 extra); the server finds that exact Transfer to your wallet on-chain |
-| USDC on the XRP Ledger | A unique destination tag; the server finds a validated USDC payment (Circle issuer) with that tag |
+| USDC on BNB Smart Chain (BEP-20), Base, Arbitrum, Optimism, Polygon, Avalanche, Ethereum (listed last: high fees) | Each payment gets a unique amount (up to $0.009999 extra); the server finds that exact Transfer to your wallet on-chain |
+| USDC on Solana | Same unique-amount method; the server checks your wallet's USDC balance changes |
+| USDC on Stellar / XRP Ledger | A unique memo (Stellar) or destination tag (XRPL) identifies the invoice |
 
 A transaction or Paynow reference can only ever settle one payment. Unpaid requests expire after 24 hours.
 
@@ -81,15 +82,18 @@ Settings (Vercel → Environment Variables). Each option switches on only when i
 |------|-------|
 | `PAYNOW_INTEGRATION_ID` | from Paynow → Receive payments → your USD integration |
 | `PAYNOW_INTEGRATION_KEY` | the integration key (Sensitive) |
-| `USDC_WALLET_BASE` | your 0x… wallet on Base |
-| `USDC_WALLET_BSC` | your 0x… wallet on BNB Smart Chain |
+| `USDC_WALLET_EVM` | your 0x… address; used on every EVM network (same address on all of them) |
+| `USDC_EVM_CHAINS` | optional, comma list to limit EVM networks, e.g. `bsc,base,arbitrum` (default: all) |
+| `USDC_WALLET_SOLANA` | your Solana address |
+| `USDC_WALLET_STELLAR` | your G… Stellar address. It needs a USDC trustline (issuer `GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN`) |
 | `USDC_WALLET_XRPL` | your r… XRPL address. It needs a trust line to USDC issuer `rGm7WCVp9gb4jZHWTEtGUr4dd74z2XuWhE` |
+| `USDC_WALLET_<CHAIN>` | optional per-network override, e.g. `USDC_WALLET_BSC` |
 | `PAYNOW_MODE` + `PAYNOW_TEST_EMAIL` | set `PAYNOW_MODE=test` and your Paynow login email while using test keys; the pay panel then says "Test mode". Remove both when you switch to live keys |
 | `SITE_URL` | optional, defaults to `https://r1vleops.vercel.app` (Paynow return/result links) |
-| `USDC_RPC_BASE`, `USDC_RPC_BSC`, `USDC_RPC_XRPL` | optional, override the public RPC endpoints |
+| `USDC_RPC_<CHAIN>` | optional, override a public RPC/Horizon endpoint |
 
-USDC contracts used: Base `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (6 decimals, Circle);
-BNB Smart Chain `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` (Binance-Peg USDC, 18 decimals).
+USDC tokens used are listed in `USDC_CHAINS` (`src/lib/payments.ts`): Circle-native USDC everywhere
+except BNB Smart Chain, which uses Binance-Peg USDC (18 decimals).
 
 ## Connecting Supabase (alternative)
 

@@ -1,16 +1,20 @@
 import {
-  USDC_CHAINS, USDC_CHAIN_IDS, amountDue, isPaynowFailed, isPaynowPaid, payableKinds, pickUsdcUnits, unitsToUsd,
+  USDC_CHAINS, USDC_CHAIN_IDS, amountDue, isEvmChain, usesTag, isPaynowFailed, isPaynowPaid, payableKinds, pickUsdcUnits, unitsToUsd,
   type Payment, type PaymentKind, type PaynowChannel, type UsdcChain,
 } from "@/lib/payments";
 import { formatUsd } from "@/lib/orders";
 import type { Order } from "@/lib/types";
-import { evmChecker, xrplChecker } from "./chains";
+import { DEFAULT_RPC, evmChecker, solanaChecker, stellarChecker, xrplChecker } from "./chains";
 import { createPaymentStore, toPublicPayment, type PaymentRecord, type PaymentStore } from "./paymentStore";
 import { toPaynowPhone, type PaynowClient } from "./paynow";
 import { StoreError, type SqlStore } from "./sqlStore";
 
 const PAYMENT_TTL_MS = 24 * 60 * 60 * 1000;
-const CHANNEL_LABEL: Record<string, string> = { ecocash: "EcoCash", onemoney: "OneMoney", innbucks: "InnBucks", web: "Paynow", base: "USDC on Base", bsc: "USDC on BNB Smart Chain", xrpl: "USDC on XRPL" };
+const SOLANA_LOOKBACK_S = 120;
+const CHANNEL_LABEL: Record<string, string> = {
+  ecocash: "EcoCash", onemoney: "OneMoney", innbucks: "InnBucks", web: "Paynow",
+  ...Object.fromEntries(USDC_CHAIN_IDS.map((c) => [c, `USDC on ${USDC_CHAINS[c].label}`])),
+};
 
 export type StartPayment =
   | { readonly kind: PaymentKind; readonly method: "paynow"; readonly channel: PaynowChannel; readonly phone?: string }
@@ -27,7 +31,7 @@ export interface PaymentServiceDeps {
   /** Paynow test mode: requests use the merchant's own email (Paynow requires it) and the UI says "test". */
   readonly paynowTestEmail?: string | null;
   readonly wallets: Partial<Record<UsdcChain, string>>;
-  readonly rpc: Record<UsdcChain, string>;
+  readonly rpc?: Partial<Record<UsdcChain, string>>;
   readonly fetcher?: typeof fetch;
 }
 
@@ -37,6 +41,7 @@ export function createPaymentService(deps: PaymentServiceDeps) {
   const payments = deps.payments ?? createPaymentStore(deps.store.sql, now);
   const fetcher = deps.fetcher ?? fetch;
   const usdcChains = USDC_CHAIN_IDS.filter((c) => !!deps.wallets[c]);
+  const rpcUrls: Record<UsdcChain, string> = { ...DEFAULT_RPC, ...Object.fromEntries(Object.entries(deps.rpc ?? {}).filter(([, v]) => !!v)) };
 
   const orderFor = async (code: string): Promise<Order> => {
     const order = await deps.store.findOrderByCode(code, { includeContact: true });
@@ -63,6 +68,17 @@ export function createPaymentService(deps: PaymentServiceDeps) {
     return { trackingCode: row.tracking_code };
   };
 
+  /** Looks for the payment on its network; returns the transaction id once found. */
+  const findOnChain = async (chain: UsdcChain, wallet: string, p: PaymentRecord): Promise<string | null> => {
+    if (chain === "xrpl") return xrplChecker(rpcUrls.xrpl, fetcher).find(wallet, p.destinationTag ?? -1, p.amountUsd);
+    if (chain === "stellar") return stellarChecker(rpcUrls.stellar, fetcher).find(wallet, String(p.destinationTag ?? ""), p.amountUsd);
+    if (p.payUnits === null || p.scanFrom === null) return null;
+    if (chain === "solana") return solanaChecker(rpcUrls.solana, fetcher).find(wallet, p.payUnits, p.scanFrom);
+    const res = await evmChecker(chain, rpcUrls[chain], fetcher).scan(wallet, p.payUnits, p.scanFrom);
+    if (!res.txHash) await payments.setScanFrom(p.id, res.nextFrom);
+    return res.txHash;
+  };
+
   const isExpired = (p: PaymentRecord) => now().getTime() - new Date(p.createdAt).getTime() > PAYMENT_TTL_MS;
 
   /** Checks Paynow or the blockchain for one pending payment and settles it if final. */
@@ -77,14 +93,8 @@ export function createPaymentService(deps: PaymentServiceDeps) {
       const chain = p.channel as UsdcChain;
       const wallet = deps.wallets[chain];
       if (!wallet) return;
-      if (chain === "xrpl") {
-        const hash = await xrplChecker(deps.rpc.xrpl, fetcher).find(wallet, p.destinationTag ?? -1, p.amountUsd);
-        if (hash) return settlePaid(p, hash);
-      } else if (p.payUnits !== null && p.scanFrom !== null) {
-        const res = await evmChecker(chain, deps.rpc[chain], fetcher).scan(wallet, p.payUnits, p.scanFrom);
-        if (res.txHash) return settlePaid(p, res.txHash);
-        await payments.setScanFrom(p.id, res.nextFrom);
-      }
+      const proof = await findOnChain(chain, wallet, p);
+      if (proof) return settlePaid(p, proof);
     }
     if (isExpired(p)) await payments.settle(p.id, "expired", null);
   };
@@ -122,12 +132,15 @@ export function createPaymentService(deps: PaymentServiceDeps) {
       const open = await payments.findOpen(order.id, input.kind, "usdc", chain);
       if (open && !isExpired(open) && open.amountUsd === amountUsd) return { payment: toPublicPayment(open), redirectUrl: null, instructions: null };
 
-      if (chain === "xrpl") {
+      if (usesTag(chain)) {
         const p = await payments.create({ orderId: order.id, kind: input.kind, method: "usdc", channel: chain, amountUsd, payAmount: amountUsd.toFixed(2), payTo: wallet, destinationTag: await payments.nextDestinationTag() });
         return { payment: toPublicPayment(p), redirectUrl: null, instructions: null };
       }
       const units = pickUsdcUnits(amountUsd, await payments.openUsdcUnits(chain));
-      const scanFrom = await evmChecker(chain, deps.rpc[chain], fetcher).startBlock();
+      // EVM: block to scan from. Solana: unix time to look back to.
+      const scanFrom = isEvmChain(chain)
+        ? await evmChecker(chain, rpcUrls[chain], fetcher).startBlock()
+        : Math.floor(now().getTime() / 1000) - SOLANA_LOOKBACK_S;
       const p = await payments.create({ orderId: order.id, kind: input.kind, method: "usdc", channel: chain, amountUsd, payAmount: unitsToUsd(units), payUnits: units, payTo: wallet, scanFrom });
       return { payment: toPublicPayment(p), redirectUrl: null, instructions: null };
     },

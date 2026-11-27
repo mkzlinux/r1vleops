@@ -21,7 +21,7 @@ export interface PaymentMethod {
 /** How clients will pay. Online checkout for these is planned; until then deposits are arranged on WhatsApp. */
 export const PAYMENT_METHODS: readonly PaymentMethod[] = [
   { id: "paynow", label: "EcoCash · OneMoney · InnBucks · Cards", detail: "Local payments via Paynow", status: "live" },
-  { id: "usdc", label: "USDC", detail: "Base, BNB Smart Chain or XRP Ledger", status: "live" },
+  { id: "usdc", label: "USDC", detail: "BNB Smart Chain, Base, Arbitrum, Optimism, Polygon, Avalanche, Solana, Stellar, XRPL or Ethereum", status: "live" },
   { id: "paypal", label: "PayPal", detail: "International cards & PayPal", status: "soon" },
   { id: "bank", label: "Bank transfer", detail: "Details shared on WhatsApp", status: "on-request" },
 ];

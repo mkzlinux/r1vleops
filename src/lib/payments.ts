@@ -6,7 +6,8 @@ import type { Order } from "./types";
 export type PaymentKind = "deposit" | "balance";
 export type PaymentMethod = "paynow" | "usdc";
 export type PaynowChannel = "web" | "ecocash" | "onemoney" | "innbucks";
-export type UsdcChain = "base" | "bsc" | "xrpl";
+export type EvmChainId = "bsc" | "base" | "arbitrum" | "optimism" | "polygon" | "avalanche" | "ethereum";
+export type UsdcChain = EvmChainId | "solana" | "stellar" | "xrpl";
 export type PaymentStatus = "pending" | "paid" | "failed" | "expired";
 
 export interface Payment {
@@ -24,7 +25,7 @@ export interface Payment {
   readonly payAmount: string | null;
   /** USDC: receiving wallet. */
   readonly payTo: string | null;
-  /** XRPL: destination tag the client must include. */
+  /** XRPL destination tag / Stellar memo the client must include. */
   readonly destinationTag: number | null;
   /** Paynow reference or chain transaction hash once paid. */
   readonly proof: string | null;
@@ -90,17 +91,36 @@ export const formValue = (fields: FormFields, key: string): string | undefined =
 
 // ---------- USDC ----------
 
-export interface EvmChain { readonly kind: "evm"; readonly label: string; readonly network: string; readonly token: string; readonly decimals: number; readonly explorerTx: string }
-export interface XrplChain { readonly kind: "xrpl"; readonly label: string; readonly network: string; readonly issuer: string; readonly currency: string; readonly explorerTx: string }
+interface ChainBase { readonly label: string; readonly network: string; readonly explorerTx: string; readonly note?: string }
+export interface EvmChain extends ChainBase { readonly kind: "evm"; readonly token: string; readonly decimals: number }
+export interface XrplChain extends ChainBase { readonly kind: "xrpl"; readonly issuer: string; readonly currency: string }
+export interface SolanaChain extends ChainBase { readonly kind: "solana"; readonly mint: string }
+export interface StellarChain extends ChainBase { readonly kind: "stellar"; readonly issuer: string; readonly code: string }
+export type ChainConfig = EvmChain | XrplChain | SolanaChain | StellarChain;
 
-/** USDC contracts. Base: Circle-native USDC (6 decimals). BSC: Binance-Peg USDC (18 decimals). XRPL: Circle issuer. */
-export const USDC_CHAINS: { readonly base: EvmChain; readonly bsc: EvmChain; readonly xrpl: XrplChain } = {
-  base: { kind: "evm", label: "Base", network: "Base mainnet", token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, explorerTx: "https://basescan.org/tx/" },
+/**
+ * USDC token per network (checked against Circle's and Across Protocol's published lists).
+ * All are Circle-native USDC (6 decimals) except BNB Smart Chain: Binance-Peg USDC, 18 decimals.
+ */
+export const USDC_CHAINS: Readonly<Record<EvmChainId, EvmChain> & { solana: SolanaChain; stellar: StellarChain; xrpl: XrplChain }> = {
   bsc: { kind: "evm", label: "BNB Smart Chain (BEP-20)", network: "BNB Smart Chain", token: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", decimals: 18, explorerTx: "https://bscscan.com/tx/" },
-  xrpl: { kind: "xrpl", label: "XRP Ledger", network: "XRPL mainnet", issuer: "rGm7WCVp9gb4jZHWTEtGUr4dd74z2XuWhE", currency: "5553444300000000000000000000000000000000", explorerTx: "https://livenet.xrpl.org/transactions/" },
+  base: { kind: "evm", label: "Base", network: "Base", token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, explorerTx: "https://basescan.org/tx/" },
+  arbitrum: { kind: "evm", label: "Arbitrum", network: "Arbitrum One", token: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", decimals: 6, explorerTx: "https://arbiscan.io/tx/" },
+  optimism: { kind: "evm", label: "Optimism", network: "OP Mainnet", token: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", decimals: 6, explorerTx: "https://optimistic.etherscan.io/tx/" },
+  polygon: { kind: "evm", label: "Polygon", network: "Polygon PoS", token: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", decimals: 6, explorerTx: "https://polygonscan.com/tx/", note: "Native USDC only, not USDC.e." },
+  avalanche: { kind: "evm", label: "Avalanche", network: "Avalanche C-Chain", token: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", decimals: 6, explorerTx: "https://snowtrace.io/tx/" },
+  solana: { kind: "solana", label: "Solana", network: "Solana", mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", explorerTx: "https://solscan.io/tx/" },
+  stellar: { kind: "stellar", label: "Stellar", network: "Stellar", issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", code: "USDC", explorerTx: "https://stellar.expert/explorer/public/tx/" },
+  xrpl: { kind: "xrpl", label: "XRP Ledger", network: "XRP Ledger", issuer: "rGm7WCVp9gb4jZHWTEtGUr4dd74z2XuWhE", currency: "5553444300000000000000000000000000000000", explorerTx: "https://livenet.xrpl.org/transactions/" },
+  ethereum: { kind: "evm", label: "Ethereum", network: "Ethereum mainnet", token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6, explorerTx: "https://etherscan.io/tx/", note: "Ethereum network fees can be several dollars." },
 };
 
-export const USDC_CHAIN_IDS = Object.keys(USDC_CHAINS) as UsdcChain[];
+export const EVM_CHAIN_IDS: readonly EvmChainId[] = ["bsc", "base", "arbitrum", "optimism", "polygon", "avalanche", "ethereum"];
+/** Display order: cheap networks first, Ethereum last. */
+export const USDC_CHAIN_IDS: readonly UsdcChain[] = ["bsc", "base", "arbitrum", "optimism", "polygon", "avalanche", "solana", "stellar", "xrpl", "ethereum"];
+export const isEvmChain = (c: UsdcChain): c is EvmChainId => USDC_CHAINS[c].kind === "evm";
+/** Networks where a memo/destination tag (rather than a unique amount) identifies the invoice. */
+export const usesTag = (c: UsdcChain): boolean => c === "xrpl" || c === "stellar";
 const MICRO = 1_000_000n;
 const MAX_OFFSET = 9_999n; // < $0.01 extra so every pending USDC payment has a unique amount
 
@@ -157,6 +177,40 @@ export function findXrplPayment(txs: readonly XrplTx[], opts: { wallet: string; 
     const amt = t.meta.delivered_amount as { currency?: string; issuer?: string; value?: string } | string | undefined;
     if (!amt || typeof amt === "string" || amt.issuer !== x.issuer || amt.currency?.toUpperCase() !== x.currency) continue;
     if (Number(amt.value) + 1e-9 >= opts.minUsd) return t.tx?.hash ?? t.hash ?? null;
+  }
+  return null;
+}
+
+export interface SolanaTokenBalance { readonly mint: string; readonly owner?: string; readonly uiTokenAmount: { readonly amount: string } }
+export interface SolanaTx {
+  readonly transaction?: { readonly signatures?: readonly string[] };
+  readonly meta?: { readonly err: unknown; readonly preTokenBalances?: readonly SolanaTokenBalance[]; readonly postTokenBalances?: readonly SolanaTokenBalance[] } | null;
+}
+
+/** Finds a successful Solana transaction that increased `wallet`'s USDC balance by exactly `units`. */
+export function findSolanaPayment(txs: readonly SolanaTx[], opts: { wallet: string; units: bigint }): string | null {
+  const mint = USDC_CHAINS.solana.mint;
+  const sum = (list: readonly SolanaTokenBalance[] | undefined) =>
+    (list ?? []).filter((b) => b.mint === mint && b.owner === opts.wallet).reduce((n, b) => n + BigInt(b.uiTokenAmount.amount), 0n);
+  for (const t of txs) {
+    if (!t.meta || t.meta.err) continue;
+    if (sum(t.meta.postTokenBalances) - sum(t.meta.preTokenBalances) === opts.units) return t.transaction?.signatures?.[0] ?? null;
+  }
+  return null;
+}
+
+export interface StellarPaymentRecord {
+  readonly type: string; readonly to?: string; readonly asset_code?: string; readonly asset_issuer?: string; readonly amount?: string;
+  readonly transaction_successful?: boolean; readonly transaction_hash?: string; readonly transaction?: { readonly memo?: string };
+}
+
+/** Finds a successful Stellar USDC payment to `wallet` carrying `memo` for at least the amount due. */
+export function findStellarPayment(records: readonly StellarPaymentRecord[], opts: { wallet: string; memo: string; minUsd: number }): string | null {
+  const c = USDC_CHAINS.stellar;
+  for (const r of records) {
+    if (r.type !== "payment" || r.transaction_successful === false || r.to !== opts.wallet) continue;
+    if (r.asset_code !== c.code || r.asset_issuer !== c.issuer || r.transaction?.memo?.trim() !== opts.memo) continue;
+    if (Number(r.amount) + 1e-9 >= opts.minUsd) return r.transaction_hash ?? null;
   }
   return null;
 }

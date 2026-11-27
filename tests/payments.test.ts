@@ -82,3 +82,32 @@ describe("USDC", () => {
     expect(findXrplPayment(txs, { wallet, tag: 78, minUsd: 1 })).toBeNull();
   });
 });
+
+import { findSolanaPayment, findStellarPayment, USDC_CHAIN_IDS as ORDER } from "@/lib/payments";
+
+describe("more USDC networks", () => {
+  test("Ethereum is listed last", () => {
+    expect(ORDER[ORDER.length - 1]).toBe("ethereum");
+    expect(ORDER.slice(0, 2)).toEqual(["bsc", "base"]);
+  });
+
+  test("Solana: matches the exact USDC balance increase for the wallet", () => {
+    const mint = USDC_CHAINS.solana.mint;
+    const wallet = "So1WALLET";
+    const tx = (pre: string | null, post: string, sig: string, err: unknown = null, m = mint) => ({
+      transaction: { signatures: [sig] },
+      meta: { err, preTokenBalances: pre === null ? [] : [{ mint: m, owner: wallet, uiTokenAmount: { amount: pre } }], postTokenBalances: [{ mint: m, owner: wallet, uiTokenAmount: { amount: post } }] },
+    });
+    const txs = [tx("1000000", "26504321", "failed", { InstructionError: [] }), tx(null, "25504321", "fake-mint", null, "OtherMint"), tx("1000000", "26504321", "good")];
+    expect(findSolanaPayment(txs, { wallet, units: 25_504_321n })).toBe("good");
+    expect(findSolanaPayment(txs, { wallet, units: 25_504_320n })).toBeNull();
+  });
+
+  test("Stellar: needs Circle USDC, the memo and enough amount", () => {
+    const c = USDC_CHAINS.stellar;
+    const rec = (memo: string, amount: string, issuer = c.issuer) => ({ type: "payment", to: "GWALLET", asset_code: "USDC", asset_issuer: issuer, amount, transaction_successful: true, transaction_hash: `h-${memo}-${amount}`, transaction: { memo } });
+    const list = [rec("100001", "100", "GFAKEISSUER"), rec("100002", "25.5"), rec("100001", "25.5")];
+    expect(findStellarPayment(list, { wallet: "GWALLET", memo: "100001", minUsd: 25.5 })).toBe("h-100001-25.5");
+    expect(findStellarPayment(list, { wallet: "GWALLET", memo: "100003", minUsd: 1 })).toBeNull();
+  });
+});

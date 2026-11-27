@@ -5,7 +5,7 @@ import { SESSION_COOKIE, verifySessionToken } from "./auth";
 import { r2Client, r2SecretFromToken } from "./r2";
 import { hitRateLimit, type RateLimitOptions } from "./rateLimit";
 import { d1HttpClient, type SqlClient } from "./sql";
-import { DEFAULT_RPC } from "./chains";
+import { EVM_CHAIN_IDS, USDC_CHAINS, USDC_CHAIN_IDS, type UsdcChain } from "@/lib/payments";
 import { createPaymentService, type PaymentService } from "./paymentService";
 import { paynowClient } from "./paynow";
 import { StoreError, createSqlStore, type SqlStore } from "./sqlStore";
@@ -85,13 +85,31 @@ export async function respond<T>(fn: () => Promise<T>, status = 200): Promise<Ne
 }
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
-const XRPL_ADDRESS = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
-const wallet = (name: string, pattern: RegExp): string | undefined => {
-  const v = process.env[name]?.trim();
-  if (!v) return undefined;
-  if (!pattern.test(v)) { console.error(`${name} is not a valid address; that network is disabled.`); return undefined; }
-  return v;
+const ADDRESS_FORMAT: Record<"evm" | "solana" | "stellar" | "xrpl", RegExp> = {
+  evm: EVM_ADDRESS,
+  solana: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+  stellar: /^G[A-Z2-7]{55}$/,
+  xrpl: /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/,
 };
+const envName = (chain: UsdcChain) => `USDC_WALLET_${chain.toUpperCase()}`;
+
+/**
+ * Receiving wallets. USDC_WALLET_EVM is used on every EVM network listed in USDC_EVM_CHAINS
+ * (default: all); USDC_WALLET_<CHAIN> overrides one network. Invalid addresses disable that network.
+ */
+function usdcWallets(): Partial<Record<UsdcChain, string>> {
+  const evmDefault = process.env.USDC_WALLET_EVM?.trim();
+  const enabledEvm = (process.env.USDC_EVM_CHAINS?.split(",").map((x) => x.trim().toLowerCase()) ?? EVM_CHAIN_IDS) as string[];
+  const out: Partial<Record<UsdcChain, string>> = {};
+  for (const chain of USDC_CHAIN_IDS) {
+    const kind = USDC_CHAINS[chain].kind;
+    const value = process.env[envName(chain)]?.trim() || (kind === "evm" && enabledEvm.includes(chain) ? evmDefault : undefined);
+    if (!value) continue;
+    if (!ADDRESS_FORMAT[kind].test(value)) { console.error(`${envName(chain)} is not a valid ${kind} address; ${chain} disabled.`); continue; }
+    out[chain] = value;
+  }
+  return out;
+}
 
 /** Paynow and USDC are each enabled only when their settings are present. */
 function paymentServiceFor(store: SqlStore): PaymentService {
@@ -102,7 +120,7 @@ function paymentServiceFor(store: SqlStore): PaymentService {
     siteUrl: (process.env.SITE_URL || "https://r1vleops.vercel.app").replace(/\/$/, ""),
     paynow: id && key ? paynowClient({ integrationId: id, integrationKey: key }) : null,
     paynowTestEmail: process.env.PAYNOW_MODE === "test" ? process.env.PAYNOW_TEST_EMAIL?.trim() || null : null,
-    wallets: { base: wallet("USDC_WALLET_BASE", EVM_ADDRESS), bsc: wallet("USDC_WALLET_BSC", EVM_ADDRESS), xrpl: wallet("USDC_WALLET_XRPL", XRPL_ADDRESS) },
-    rpc: { base: process.env.USDC_RPC_BASE || DEFAULT_RPC.base, bsc: process.env.USDC_RPC_BSC || DEFAULT_RPC.bsc, xrpl: process.env.USDC_RPC_XRPL || DEFAULT_RPC.xrpl },
+    wallets: usdcWallets(),
+    rpc: Object.fromEntries(USDC_CHAIN_IDS.map((c) => [c, process.env[`USDC_RPC_${c.toUpperCase()}`] ?? ""])),
   });
 }

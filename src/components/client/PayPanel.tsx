@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { isCloudflareBackend } from "@/lib/data";
 import { checkPayment, getPaymentOptions, startPayment, type PaymentOptions, type StartPaymentInput } from "@/lib/data/paymentsApi";
 import { formatUsd } from "@/lib/orders";
-import { PAYNOW_CHANNELS, USDC_CHAINS, amountDue, payableKinds, type Payment, type PaynowChannel, type UsdcChain } from "@/lib/payments";
+import { PAYNOW_CHANNELS, USDC_CHAINS, amountDue, payableKinds, usesTag, type Payment, type PaynowChannel, type UsdcChain } from "@/lib/payments";
 import type { Order } from "@/lib/types";
 import { ArrowUpRight, Check, Coin } from "../Icons";
 
@@ -104,6 +104,7 @@ export function PayPanel({ order, onPaid, resumePaymentId }: { order: Order; onP
   if (live) {
     const isUsdc = live.method === "usdc";
     const c = isUsdc ? USDC_CHAINS[live.channel as UsdcChain] : null;
+    const hasTag = isUsdc && usesTag(live.channel as UsdcChain);
     return (
       <section className="pay-panel no-print" aria-live="polite">
         <header className="pp-head"><span className="pp-ico"><Coin size={18} /></span><h2>{title}</h2></header>
@@ -112,11 +113,13 @@ export function PayPanel({ order, onPaid, resumePaymentId }: { order: Order; onP
         )}
         {live.status === "pending" && isUsdc && c && (
           <>
-            <p className="pp-warn">Send <b>USDC</b> on <b>{c.network}</b> only. Other tokens or networks can&apos;t be recovered.</p>
-            <CopyField label={live.channel === "xrpl" ? "Amount (USDC)" : "Send exactly (USDC)"} value={live.payAmount ?? ""} isImportant />
+            <p className="pp-warn">Send <b>USDC</b> on <b>{c.network}</b> only. Other tokens or networks can&apos;t be recovered.{c.note ? ` ${c.note}` : ""}</p>
+            <CopyField label={hasTag ? "Amount (USDC)" : "Send exactly (USDC)"} value={live.payAmount ?? ""} isImportant />
             <CopyField label="To address" value={live.payTo ?? ""} />
-            {live.destinationTag !== null && <CopyField label="Destination tag (required)" value={String(live.destinationTag)} isImportant />}
-            {live.channel !== "xrpl" && <p className="pp-note">The extra decimals identify your invoice. Send that exact amount, after any withdrawal fee.</p>}
+            {hasTag && live.destinationTag !== null && <CopyField label={live.channel === "stellar" ? "Memo (required)" : "Destination tag (required)"} value={String(live.destinationTag)} isImportant />}
+            {hasTag
+              ? <p className="pp-note">Without the {live.channel === "stellar" ? "memo" : "destination tag"} we can&apos;t match your payment to this invoice.</p>
+              : <p className="pp-note">The extra decimals identify your invoice. Make sure exactly this amount arrives (add any withdrawal fee on top).</p>}
             <p className="pp-wait"><i />Watching the blockchain. Confirmation usually takes under a minute after you send.</p>
           </>
         )}
