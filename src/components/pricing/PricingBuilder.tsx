@@ -47,7 +47,6 @@ function ItemCard({ service, index }: { service: Service; index: number }) {
   const isPiece = maxQtyFor(service) > 1;
   const price = priceLabel(service, region);
   const note = priceNote(service, region);
-  const isLocal = Boolean(service.regional?.[region]);
   const btn = useRef<HTMLButtonElement>(null);
   return (
     <article className={`item-card dept-${service.departmentId}${qty > 0 ? " in" : ""}`} style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}>
@@ -65,7 +64,6 @@ function ItemCard({ service, index }: { service: Service; index: number }) {
           <small>{price.kicker}</small>
           <b>{price.amount}<em>{price.suffix}</em></b>
           {note && <span className="item-deal">{note}</span>}
-          {isLocal && !note && region === "zw" && <span className="item-deal">Zimbabwe price</span>}
           <span className="item-days"><Clock size={13} /> ~{service.deliveryDays} day{service.deliveryDays === 1 ? "" : "s"}</span>
         </div>
         {qty > 0 && isPiece ? (
