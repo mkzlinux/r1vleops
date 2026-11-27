@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { isCloudflareBackend, isSupabaseConfigured } from "@/lib/data";
 import { Chip, Film, Plus, Shield, Users } from "../Icons";
+import { Brand } from "../site/SiteChrome";
 import { OpsBackground } from "./OpsBackground";
 
 export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "hq";
@@ -30,44 +31,48 @@ function ExitIcon() {
 
 interface OpsFrameProps {
   readonly active: OpsNavId;
-  readonly accent?: string;
-  readonly strikeTarget?: { readonly x: number; readonly y: number };
   readonly alerts?: number;
   readonly children: ReactNode;
 }
 
-export function OpsFrame({ active, accent, strikeTarget, alerts = 0, children }: OpsFrameProps) {
+/** Ops shell in the landing page's language: paper page, pill nav, white and metal cards. */
+export function OpsFrame({ active, alerts = 0, children }: OpsFrameProps) {
+  const isLive = isSupabaseConfigured || isCloudflareBackend;
   return (
     <div className="ops-page">
-      <div className="ops-frame">
-        <OpsBackground accent={accent} strikeTarget={strikeTarget} />
-        <div className="ops-veil" aria-hidden="true" />
-        <nav className="ops-side" aria-label="Dashboard">
-          <Link href="/ops" className="ops-mark" aria-label="R1VLE Ops home">R1</Link>
-          <div className="ops-side-links">
+      <header className="ops-nav">
+        <div className="ops-nav-inner">
+          <div className="ops-brand"><Brand href="/ops" height={20} /><span className="ops-tag">Ops</span></div>
+          <nav className="ops-links" aria-label="Dashboard">
             {NAV.map((n) => (
-              <Link key={n.id} href={n.href} className={active === n.id ? "on" : ""} aria-label={n.label} aria-current={active === n.id ? "page" : undefined} title={n.label}>
-                {n.icon}
+              <Link key={n.id} href={n.href} className={active === n.id ? "on" : ""} aria-current={active === n.id ? "page" : undefined} title={n.label}>
+                {n.icon}<span>{n.label}</span>
               </Link>
             ))}
+          </nav>
+          <div className="ops-actions">
+            <span className={`ops-mode${isLive ? " live" : ""}`}><i />{isLive ? "Live" : "Demo"}</span>
+            <Link href="/pricing" className="ops-round" aria-label="New order" title="New order"><Plus size={18} /></Link>
+            <Link href="/ops#requests" className="ops-round" aria-label={`${alerts} new requests`} title="New requests"><BellIcon />{alerts > 0 && <span className="ops-dot">{alerts}</span>}</Link>
+            <Link href="/" className="ops-round hide-sm" aria-label="Public site" title="Public site"><ExitIcon /></Link>
+            {isCloudflareBackend
+              ? <button type="button" className="ops-avatar" title="Sign out" aria-label="Sign out" onClick={() => { fetch("/api/ops/logout", { method: "POST" }).finally(() => window.location.reload()); }}>R1</button>
+              : <span className="ops-avatar" aria-hidden="true">R1</span>}
           </div>
-          <Link href="/" className="ops-exit" aria-label="Back to public site" title="Public site"><ExitIcon /></Link>
-        </nav>
-        <div className="ops-main">
-          <header className="ops-top">
-            <div className="ops-hello"><small>Welcome back</small><b>Founder · R1VLE Ops</b></div>
-            <div className="ops-actions">
-              <span className="ops-mode">{isSupabaseConfigured || isCloudflareBackend ? "Live data" : "Demo · this browser"}</span>
-              <Link href="/pricing" className="ops-round" aria-label="New order" title="New order"><Plus size={18} /></Link>
-              <Link href="/ops#requests" className="ops-round" aria-label={`${alerts} new requests`} title="New requests"><BellIcon />{alerts > 0 && <span className="ops-dot">{alerts}</span>}</Link>
-              {isCloudflareBackend
-                ? <button type="button" className="ops-avatar" title="Sign out" aria-label="Sign out" onClick={() => { fetch("/api/ops/logout", { method: "POST" }).finally(() => window.location.reload()); }}>R1</button>
-                : <span className="ops-avatar" aria-hidden="true">R1</span>}
-            </div>
-          </header>
-          {children}
         </div>
-      </div>
+      </header>
+      <main className="ops-main">{children}</main>
     </div>
+  );
+}
+
+/** Dark metal feature card with the animated tech background (the dashboard's "hero"). */
+export function OpsSky({ accent, strikeTarget, className = "", children }: { accent?: string; strikeTarget?: { readonly x: number; readonly y: number }; className?: string; children: ReactNode }) {
+  return (
+    <section className={`ops-sky ${className}`}>
+      <OpsBackground accent={accent} strikeTarget={strikeTarget} />
+      <div className="ops-veil" aria-hidden="true" />
+      <div className="ops-sky-body">{children}</div>
+    </section>
   );
 }

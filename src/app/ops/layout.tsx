@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@/components/site/site.css";
 import "@/components/client/client.css";
 import "@/components/ops/ops.css";
 import { OpsGate } from "@/components/ops/OpsShell";

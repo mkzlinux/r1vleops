@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect } from "react";
 import { departmentById } from "@/lib/catalog";
 import { waLink } from "@/lib/config";
 import { isCloudflareBackend } from "@/lib/data";
@@ -11,6 +11,7 @@ import { formatUsd, normalizeTrackingCode, orderTotals, stageLabel } from "@/lib
 import { STAGES, type Order } from "@/lib/types";
 import { ArrowUpRight, WhatsApp } from "../Icons";
 import { useOrderByCode } from "./useOrderByCode";
+import { rememberCode } from "@/lib/clientMemory";
 
 export function ProgressRing({ value, size = 170, color = "var(--red)", track = "var(--rule)", label = "complete" }: { value: number; size?: number; color?: string; track?: string; label?: string }) {
   const r = 42;
@@ -79,6 +80,8 @@ export function TrackView({ initialCode }: { initialCode: string | null }) {
   const router = useRouter();
   const [input, setInput] = useState(initialCode ?? "");
   const state = useOrderByCode(initialCode);
+  const foundCode = state.status === "found" ? state.order.trackingCode : null;
+  useEffect(() => { if (foundCode) rememberCode(foundCode); }, [foundCode]);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const clean = normalizeTrackingCode(input);

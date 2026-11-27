@@ -31,9 +31,12 @@ CREATE TABLE IF NOT EXISTS orders (
   progress INTEGER NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
   assigned_worker_id TEXT REFERENCES workers (id) ON DELETE SET NULL,
   region TEXT NOT NULL DEFAULT 'intl' CHECK (region IN ('zw', 'intl')),
-  attachments TEXT NOT NULL DEFAULT '[]'
+  attachments TEXT NOT NULL DEFAULT '[]',
+  client_email TEXT
 );
 CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC);
+
+CREATE INDEX IF NOT EXISTS orders_client_email ON orders(client_email);
 
 CREATE TABLE IF NOT EXISTS order_updates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,3 +77,14 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS payments_order ON payments(order_id);
 CREATE INDEX IF NOT EXISTS payments_open ON payments(method, channel, status);
+
+-- Clients are keyed by lowercased email (no accounts; guest-checkout style).
+CREATE TABLE IF NOT EXISTS clients (
+  email TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  company TEXT NOT NULL DEFAULT '',
+  whatsapp TEXT NOT NULL DEFAULT '',
+  first_order_at TEXT NOT NULL,
+  last_order_at TEXT NOT NULL,
+  order_count INTEGER NOT NULL DEFAULT 0
+);

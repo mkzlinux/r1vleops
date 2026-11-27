@@ -32,6 +32,16 @@ describe("ops stats", () => {
     expect(rows.find((r) => r.name === "Rudo Chikore")?.orders).toBe(2);
   });
 
+  test("clientsFrom keys clients by email, ignoring case and spaces", () => {
+    const base = orders[0];
+    const a = { ...base, id: "a1", client: { ...base.client, email: "Tari@Example.com ", name: "Tari" } };
+    const b = { ...base, id: "a2", client: { ...base.client, email: "tari@example.com", name: "Tari M" } };
+    const rows = clientsFrom([a, b]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ key: "tari@example.com", orders: 2, name: "Tari M" });
+    expect(rows[0].orderIds).toEqual(["a1", "a2"]);
+  });
+
   test("depositPosition splits pending from collected", () => {
     expect(depositPosition(orders)).toEqual({ pending: 300, collected: 175 + 750 + 275 });
   });

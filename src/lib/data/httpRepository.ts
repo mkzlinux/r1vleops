@@ -57,6 +57,7 @@ export function createHttpRepository(fetcher: Fetch = (...args) => fetch(...args
     },
 
     findOrderByCode: (code) => call<Order | null>(`/api/track/${encodeURIComponent(code.trim())}`),
+    findClientOrders: (email, code) => call<Order[]>("/api/clients/orders", { method: "POST", body: { email, code } }),
     listOrders: () => call<Order[]>("/api/ops/orders"),
     advanceOrder: (orderId, change: OrderAdvance) => call<Order>(`/api/ops/orders/${encodeURIComponent(orderId)}`, { method: "PATCH", body: { action: "advance", ...change } }),
     assignWorker: (orderId, workerId) => call<Order>(`/api/ops/orders/${encodeURIComponent(orderId)}`, { method: "PATCH", body: { action: "assign", workerId } }),

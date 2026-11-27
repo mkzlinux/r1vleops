@@ -15,6 +15,8 @@ export interface R1vleRepository {
   /** A URL the operator can open to view/download an attachment, or null if unavailable. */
   openAttachment(attachment: Attachment): Promise<string | null>;
   findOrderByCode(code: string): Promise<Order | null>;
+  /** A client's full history: every order under `email`, only if `code` is one of their tracking codes. */
+  findClientOrders(email: string, code: string): Promise<Order[]>;
   listOrders(): Promise<Order[]>;
   advanceOrder(orderId: string, change: OrderAdvance): Promise<Order>;
   assignWorker(orderId: string, workerId: string | null): Promise<Order>;

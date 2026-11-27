@@ -8,7 +8,7 @@ import { checkPayment } from "@/lib/data/paymentsApi";
 import { formatUsd, orderTotals, stageLabel } from "@/lib/orders";
 import { clientsFrom, isActive, ordersFor, summarize } from "@/lib/opsStats";
 import type { DepartmentId, Order } from "@/lib/types";
-import { OpsFrame } from "./OpsFrame";
+import { OpsFrame, OpsSky } from "./OpsFrame";
 import { ClientsList, OrderDrawer, PriceList, TeamList } from "./RoomPanels";
 import { useOpsData } from "./useOpsData";
 
@@ -78,26 +78,28 @@ export function RoomView({ room }: { room: RoomId }) {
     items.length === 0 ? <p className="g-empty">{empty}</p> : items.map((o) => <OrderRow key={o.id} order={o} isOpen={o.id === openId} onOpen={() => setOpenId(o.id)} />);
 
   return (
-    <OpsFrame active={room} accent={meta.accent} strikeTarget={{ x: 0.3, y: 0.42 }} alerts={summarize(orders).requests}>
+    <OpsFrame active={room} alerts={summarize(orders).requests}>
       <div className={`room-grid${openOrder ? " with-drawer" : ""}`}>
-        <section className="ops-hero room-hero">
-          <span className="ops-chip" style={{ borderColor: meta.accent }}>{meta.name}</span>
-          <h1>{headline}</h1>
-          <p>{error ?? meta.blurb}</p>
-          <div className="room-kpis">
-            <div><b>{s.requests}</b><small>New requests</small></div>
-            <div><b>{s.active}</b><small>In production</small></div>
-            <div><b>{formatUsd(s.pipelineUsd).replace(".00", "")}</b><small>Open value</small></div>
-            <div><b>{crew.length}</b><small>Crew</small></div>
-          </div>
-          <div className="glass-panel room-panel">
+        <section className="room-main">
+          <OpsSky accent={meta.accent} strikeTarget={{ x: 0.82, y: 0.35 }} className="room-hero">
+            <span className="ops-chip" style={{ "--dept": meta.accent } as React.CSSProperties}><i />{meta.name}</span>
+            <h1>{headline}</h1>
+            <p>{error ?? meta.blurb}</p>
+            <div className="room-kpis">
+              <div><b>{s.requests}</b><small>New requests</small></div>
+              <div><b>{s.active}</b><small>In production</small></div>
+              <div><b>{formatUsd(s.pipelineUsd).replace(".00", "")}</b><small>Open value</small></div>
+              <div><b>{crew.length}</b><small>Crew</small></div>
+            </div>
+          </OpsSky>
+          <div className="room-panel">
             <div className="g-tabs" role="tablist">
               {tabs.map((t) => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>)}
             </div>
             <div className="g-list" role="tabpanel">
               {tab === "requests" && list(requests, "No new requests. Orders awaiting deposit land here.")}
               {tab === "projects" && list(projects, "Nothing in production yet.")}
-              {tab === "clients" && <ClientsList clients={clientsFrom(scoped)} />}
+              {tab === "clients" && <ClientsList clients={clientsFrom(scoped)} orders={scoped} onOpen={setOpenId} />}
               {tab === "team" && <TeamList workers={crew} defaultDept={isHq ? "hq" : (room as DepartmentId)} onHire={(input) => run(() => repo.hireWorker(input))} />}
               {tab === "pricing" && <PriceList services={roomServices} onSave={(id, price) => run(() => repo.updateServicePrice(id, price))} />}
             </div>

@@ -8,6 +8,7 @@ R1VLE's public site and the founder's operations campus.
 | Pricing: build a bucket (animated, mobile bottom sheet), negotiate under the total | `/pricing` | Next.js |
 | Checkout with file uploads → invoice + tracking code → 50% deposit | `/order`, `/invoice/[code]` | Next.js |
 | Client project tracking | `/track?code=R1V-XXXX-XXXX` | Next.js |
+| Client order history (email + any one tracking code, no accounts) | `/orders` | Next.js |
 | Ops dashboard: forecast overview, department rooms, order drawer | `/ops`, `/ops/[room]` | Next.js + animated canvas background |
 
 ## How the pieces talk
@@ -59,6 +60,14 @@ and R2 bucket `r1vleops-order-files`.
 Security: prices are always recomputed on the server; public tracking hides contact details and the
 brief; public endpoints are rate limited per IP in D1; `/ops` APIs need an httpOnly, SameSite=strict,
 HMAC-signed session cookie and same-origin requests.
+
+## Clients (no accounts)
+
+Clients are filed by **email** (trimmed, lowercased): the `clients` table in D1 and `orders.client_email`.
+`/orders` shows a client every order under their email once they also enter any one of their tracking
+codes, so a leaked invoice alone never reveals someone's history. The device remembers their details
+and codes (localStorage) to pre-fill checkout and reopen their history. In `/ops` → Clients, each client
+expands to their order history, with a "Returning" badge for repeat clients.
 
 ## Online payments: Paynow and USDC
 

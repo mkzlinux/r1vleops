@@ -84,3 +84,15 @@ describe("local repository", () => {
     expect((await repo.listWorkers()).length).toBe(5);
   });
 });
+
+describe("client history (local)", () => {
+  test("needs the client's email and one of their codes", async () => {
+    const { createLocalRepository, memoryStore, memoryBlobStore } = await import("@/lib/data/localRepository");
+    const repo = createLocalRepository(memoryStore(), () => new Date("2026-11-27T10:00:00Z"), memoryBlobStore());
+    const c = { name: "Tari", company: "", email: "Tari@Mail.com", whatsapp: "+263771234567" };
+    const a = await repo.createOrder({ client: c, brief: "", items: [{ serviceId: "cre-logo", qty: 1 }], region: "zw" });
+    await repo.createOrder({ client: { ...c, email: "tari@mail.com" }, brief: "", items: [{ serviceId: "cre-flyer", qty: 1 }], region: "zw" });
+    expect(await repo.findClientOrders("tari@mail.com", a.trackingCode)).toHaveLength(2);
+    expect(await repo.findClientOrders("other@mail.com", a.trackingCode)).toHaveLength(0);
+  });
+});

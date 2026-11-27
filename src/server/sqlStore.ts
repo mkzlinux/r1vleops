@@ -2,6 +2,7 @@ import { SERVICES } from "@/lib/catalog";
 import type { BlobStore } from "@/lib/data/localRepository";
 import { SEED_WORKERS } from "@/lib/data/seed";
 import { MAX_FILES, attachmentKey, validateFiles } from "@/lib/files";
+import { clientKey } from "@/lib/opsStats";
 import { advanceOrder as applyAdvance, buildOrder, isValidTrackingCode, normalizeTrackingCode, validateNewOrder, type OrderAdvance } from "@/lib/orders";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, ProjectUpdate, Service, Worker } from "@/lib/types";
 import { paymentsFor } from "./paymentStore";
@@ -92,6 +93,13 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
     return SERVICES.map((s) => (map.has(s.id) ? { ...s, priceUsd: map.get(s.id) as number } : s));
   };
 
+  /** The client record, keyed by email: latest details win, order count accumulates. */
+  const upsertClient = (order: Order) =>
+    sql.query(
+      "INSERT INTO clients (email, name, company, whatsapp, first_order_at, last_order_at, order_count) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT(email) DO UPDATE SET name = excluded.name, company = excluded.company, whatsapp = excluded.whatsapp, last_order_at = excluded.last_order_at, order_count = clients.order_count + 1",
+      [clientKey(order.client.email), order.client.name, order.client.company, order.client.whatsapp, order.createdAt, order.createdAt],
+    );
+
   const insertUpdate = (orderId: string, u: ProjectUpdate) =>
     sql.query("INSERT INTO order_updates (order_id, at, stage, progress, note) VALUES (?, ?, ?, ?, ?)", [orderId, u.at, u.stage, u.progress, u.note]);
 
@@ -131,14 +139,15 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
         const order = buildOrder(input, { services, existingInvoiceNos: existing.map((r) => r.invoice_no), now: now(), random: Math.random });
         try {
           await sql.query(
-            "INSERT INTO orders (id, tracking_code, invoice_no, created_at, department_id, client, brief, lines, deposit_pct, stage, progress, assigned_worker_id, region, attachments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, '[]')",
-            [order.id, order.trackingCode, order.invoiceNo, order.createdAt, order.departmentId, JSON.stringify(order.client), order.brief, JSON.stringify(order.lines), order.depositPct, order.stage, order.progress, order.region ?? "intl"],
+            "INSERT INTO orders (id, tracking_code, invoice_no, created_at, department_id, client, brief, lines, deposit_pct, stage, progress, assigned_worker_id, region, attachments, client_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, '[]', ?)",
+            [order.id, order.trackingCode, order.invoiceNo, order.createdAt, order.departmentId, JSON.stringify(order.client), order.brief, JSON.stringify(order.lines), order.depositPct, order.stage, order.progress, order.region ?? "intl", clientKey(order.client.email)],
           );
         } catch (err: unknown) {
           if (err instanceof Error && /unique/i.test(err.message) && attempt < 3) continue; // invoice/code collision: retry
           throw err;
         }
         for (const u of order.updates) await insertUpdate(order.id, u);
+        await upsertClient(order);
         return order;
       }
       throw new StoreError("Could not allocate an invoice number. Please try again.");
@@ -147,6 +156,21 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
     async findOrderByCode(code: string, opts: FindOptions): Promise<Order | null> {
       if (!isValidTrackingCode(code)) return null;
       return loadOrder("tracking_code = ?", [normalizeTrackingCode(code)], opts.includeContact);
+    },
+
+    /**
+     * Guest-checkout history: all orders filed under `email`, but only if `code` is one of that
+     * client's tracking codes (proves they hold one of their invoices). Otherwise nothing.
+     */
+    async findClientOrders(email: string, code: string): Promise<Order[]> {
+      const key = clientKey(email);
+      if (!key || !isValidTrackingCode(code)) return [];
+      const [owner] = await sql.query<{ id: string }>("SELECT id FROM orders WHERE tracking_code = ? AND client_email = ?", [normalizeTrackingCode(code), key]);
+      if (!owner) return [];
+      const rows = await sql.query<OrderRow>("SELECT * FROM orders WHERE client_email = ? ORDER BY created_at DESC LIMIT 100", [key]);
+      const ids = rows.map((r) => r.id);
+      const [updates, payments] = await Promise.all([updatesFor(ids), paymentsFor(sql, ids)]);
+      return rows.map((r) => ({ ...toOrder(r, updates.get(r.id) ?? [], true), assignedWorkerId: null, payments: payments.get(r.id) ?? [] }));
     },
 
     async listOrders(): Promise<Order[]> {

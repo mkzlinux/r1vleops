@@ -90,6 +90,9 @@ export function createSupabaseRepository(db: SupabaseClient): R1vleRepository {
       const { data, error } = await db.storage.from(FILES_BUCKET).createSignedUrl(attachment.key, 600);
       return error || !data ? null : data.signedUrl;
     },
+    async findClientOrders() {
+      throw new Error("Order history is available on the Cloudflare backend.");
+    },
     async findOrderByCode(code) {
       const { data, error } = await db.rpc("track_order", { p_code: code });
       if (error) fail("Could not look up code", error);

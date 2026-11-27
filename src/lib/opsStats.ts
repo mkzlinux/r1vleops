@@ -38,18 +38,27 @@ export interface ClientRow {
   readonly email: string;
   readonly orders: number;
   readonly lifetimeUsd: number;
+  /** Order ids, oldest first. */
+  readonly orderIds: readonly string[];
+  readonly lastOrderAt: string;
 }
+
+/** A client's record key: their email, trimmed and lowercased (guest-checkout style, no accounts). */
+export const clientKey = (email: string): string => email.trim().toLowerCase();
 
 /** Groups orders into one row per client, most valuable first. */
 export function clientsFrom(orders: readonly Order[]): ClientRow[] {
   const map = new Map<string, ClientRow>();
-  for (const o of orders) {
-    const key = (o.client.email || o.client.name).toLowerCase();
+  const oldestFirst = [...orders].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  for (const o of oldestFirst) {
+    const key = clientKey(o.client.email) || o.client.name.toLowerCase();
     const prev = map.get(key);
     const value = orderTotals(o).total;
+    // Latest order's details win (people update their name or number).
+    const details = { name: o.client.name, company: o.client.company, whatsapp: o.client.whatsapp, email: key };
     map.set(key, prev
-      ? { ...prev, orders: prev.orders + 1, lifetimeUsd: prev.lifetimeUsd + value }
-      : { key, name: o.client.name, company: o.client.company, whatsapp: o.client.whatsapp, email: o.client.email, orders: 1, lifetimeUsd: value });
+      ? { ...prev, ...details, orders: prev.orders + 1, lifetimeUsd: prev.lifetimeUsd + value, orderIds: [...prev.orderIds, o.id], lastOrderAt: o.createdAt }
+      : { key, ...details, orders: 1, lifetimeUsd: value, orderIds: [o.id], lastOrderAt: o.createdAt });
   }
   return [...map.values()].sort((a, b) => b.lifetimeUsd - a.lifetimeUsd);
 }

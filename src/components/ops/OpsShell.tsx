@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { getSupabase, isCloudflareBackend, isSupabaseConfigured } from "@/lib/data";
+import { Brand } from "../site/SiteChrome";
 
 type GateState = "checking" | "signed-in" | "signed-out";
 
@@ -39,7 +40,7 @@ function PasswordGate({ children }: { children: ReactNode }) {
   return (
     <div className="ops gate">
       <form className="glass" onSubmit={submit}>
-        <span className="mode-pill">R1VLE Ops</span>
+        <Brand height={22} /><span className="mode-pill">Ops</span>
         <h1>Operator sign-in</h1>
         {state === "checking" ? <p className="hint-line">Checking session…</p> : (
           <>
@@ -83,7 +84,7 @@ function SupabaseGate({ children }: { children: ReactNode }) {
   return (
     <div className="ops gate">
       <form className="glass" onSubmit={send}>
-        <span className="mode-pill">R1VLE Ops</span>
+        <Brand height={22} /><span className="mode-pill">Ops</span>
         <h1>Operator sign-in</h1>
         {state === "checking" ? <p className="hint-line">Checking session…</p> : (
           <>

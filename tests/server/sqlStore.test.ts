@@ -95,4 +95,19 @@ describe("SQL store (Cloudflare D1 schema)", () => {
     expect(order.attachments).toHaveLength(1);
     await expect(s.reserveAttachments(o.trackingCode, [{ name: "x.exe", type: "", size: 10 }])).rejects.toThrow(/not supported/);
   });
+
+  test("files clients by email and shows a client all their orders with email + any one code", async () => {
+    const s = store();
+    const a = await s.createOrder({ client: { ...client, email: "Rudo@Example.com" }, brief: "", items: [{ serviceId: "cre-logo", qty: 1 }], region: "zw" });
+    const b = await s.createOrder({ client: { ...client, name: "Rudo Moyo" }, brief: "", items: [{ serviceId: "cre-flyer", qty: 2 }], region: "zw" });
+    await s.createOrder({ client: { ...client, email: "someone@else.com" }, brief: "", items: [{ serviceId: "cre-logo", qty: 1 }], region: "zw" });
+
+    const mine = await s.findClientOrders(" RUDO@example.com", a.trackingCode);
+    expect(mine.map((o) => o.id).sort()).toEqual([a.id, b.id].sort());
+    expect(await s.findClientOrders("someone@else.com", a.trackingCode)).toEqual([]);
+    expect(await s.findClientOrders("rudo@example.com", "R1V-ZZZZ-ZZZZ")).toEqual([]);
+
+    const [row] = await s.sql.query<{ email: string; name: string; order_count: number }>("SELECT email, name, order_count FROM clients WHERE email = ?", ["rudo@example.com"]);
+    expect(row).toMatchObject({ email: "rudo@example.com", name: "Rudo Moyo", order_count: 2 });
+  });
 });

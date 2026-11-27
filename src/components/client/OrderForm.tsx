@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "rea
 import { bucketWhatsappMessage } from "@/lib/bucket";
 import { COMPANY } from "@/lib/catalog";
 import { waLink } from "@/lib/config";
+import { readClientMemory, rememberClient } from "@/lib/clientMemory";
 import { getRepository } from "@/lib/data";
 import { MAX_FILES, formatBytes, validateFiles } from "@/lib/files";
 import { formatUsd, validateNewOrder } from "@/lib/orders";
@@ -72,6 +73,13 @@ export function OrderForm() {
   const [honeypot, setHoneypot] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "placing" | "uploading">("idle");
+  const [returningName, setReturningName] = useState<string | null>(null);
+
+  // Returning client on this device: pre-fill their details (records themselves are keyed by email).
+  useEffect(() => {
+    const remembered = readClientMemory().client;
+    if (remembered) { setClient(remembered); setReturningName(remembered.name.split(" ")[0] || null); }
+  }, []);
 
   // Old links (/order?service=x) still work: drop that service into the bucket once.
   const seeded = useRef(false);
@@ -97,6 +105,7 @@ export function OrderForm() {
     try {
       const repo = getRepository();
       const order = await repo.createOrder(input);
+      rememberClient(client, order.trackingCode);
       let filesFailed = false;
       if (files.length > 0) {
         setStatus("uploading");
@@ -127,7 +136,11 @@ export function OrderForm() {
       <div>
         <div className="panel">
           <h2>1 · Your details</h2>
-          <p className="hint">We send updates on WhatsApp. Your invoice and tracking code appear right after you submit.</p>
+          <p className="hint">
+            {returningName
+              ? <>Welcome back, {returningName}. Your details are filled in; this order joins your history under {client.email}. <button type="button" className="linklike" onClick={() => { setClient(EMPTY_CLIENT); setReturningName(null); }}>Not you?</button></>
+              : "We send updates on WhatsApp. Your invoice and tracking code appear right after you submit. Use the same email each time to keep all your orders together."}
+          </p>
           <div className="form-grid">
             <div className="field"><label htmlFor="o-name">Full name *</label><input id="o-name" className="input" value={client.name} onChange={(e) => set("name")(e.target.value)} autoComplete="name" required /></div>
             <div className="field"><label htmlFor="o-co">Company</label><input id="o-co" className="input" value={client.company} onChange={(e) => set("company")(e.target.value)} autoComplete="organization" /></div>

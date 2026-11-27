@@ -8,7 +8,7 @@ import { dailyActivity, forecast } from "@/lib/opsForecast";
 import { depositPosition, ordersFor, summarize } from "@/lib/opsStats";
 import type { DayActivity } from "@/lib/opsForecast";
 import { ArrowUpRight, Bot, Chip, Coin, Film, Shield, Users } from "../Icons";
-import { OpsFrame } from "./OpsFrame";
+import { OpsFrame, OpsSky } from "./OpsFrame";
 import { useOpsData } from "./useOpsData";
 
 const DEPT_ICON = { security: <Shield size={16} />, intelligence: <Chip size={16} />, creative: <Film size={16} /> } as const;
@@ -75,7 +75,7 @@ export function Overview() {
   useEffect(() => {
     const place = () => {
       const m = markerRef.current?.getBoundingClientRect();
-      const f = document.querySelector(".ops-frame")?.getBoundingClientRect();
+      const f = document.querySelector(".ops-sky")?.getBoundingClientRect();
       if (m && f) setStrike({ x: (m.left + m.width / 2 - f.left) / f.width, y: (m.top + m.height / 2 - f.top) / f.height });
     };
     place();
@@ -83,15 +83,57 @@ export function Overview() {
     return () => window.removeEventListener("resize", place);
   }, [orders.length]);
 
+  const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
+
   return (
-    <OpsFrame active="overview" strikeTarget={strike} alerts={total.requests}>
+    <OpsFrame active="overview" alerts={total.requests}>
+      <div className="ops-head">
+        <div>
+          <span className="eyebrow" suppressHydrationWarning>{greeting} · {now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</span>
+          <h2 className="ops-title">Today at <span className="accent mark">R1VLE.</span></h2>
+        </div>
+        <Link href="/pricing" className="btn btn-dark"><span>New order</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
+      </div>
+
       <div className="ops-grid">
-        <section className="ops-hero" aria-labelledby="ops-title">
-          <span className="ops-chip">Operations forecast</span>
+        <OpsSky strikeTarget={strike} className="ops-hero">
+          <span className="ops-chip"><i />Operations forecast</span>
           <h1 id="ops-title">{isLoading ? "Reading the sky…" : fc.headline}</h1>
           <p>{error ?? fc.summary}</p>
           <Timeline days={days} markerRef={markerRef} />
-          <div className="live-orders" id="requests" aria-label="Live orders">
+        </OpsSky>
+
+        <aside className="ops-cards" aria-label="Summary">
+          <div className="o-card lime">
+            <div className="o-label"><Coin size={16} /> Open pipeline</div>
+            <div className="o-big">{formatUsd(total.pipelineUsd).replace(".00", "")}</div>
+            <div className="o-meta">
+              <span><Users size={14} /> {total.clients} clients</span>
+              <span>{formatUsd(deposits.collected).replace(".00", "")} collected</span>
+              <span><Bot size={14} /> {workers.filter((w) => w.kind === "ai").length} AI workers</span>
+            </div>
+          </div>
+          {DEPARTMENTS.map((d) => {
+            const s = summarize(ordersFor(orders, d.id));
+            return (
+              <Link key={d.id} href={`/ops/${d.id}`} className={`o-card dept dc-${d.id}`}>
+                <span className="o-ico">{DEPT_ICON[d.id]}</span>
+                <div className="o-grow">
+                  <b>{d.name}</b>
+                  <small>{s.requests > 0 ? `${s.requests} new request${s.requests === 1 ? "" : "s"}` : s.active > 0 ? "In production" : "All clear"}</small>
+                </div>
+                <div className="o-num">{s.active + s.requests}</div>
+                <span className="o-go"><ArrowUpRight size={16} /></span>
+              </Link>
+            );
+          })}
+        </aside>
+      </div>
+
+      <section className="ops-strip" id="requests" aria-labelledby="live-title">
+        <div className="ops-strip-head"><h3 id="live-title">Live orders</h3><span className="dim">{live.length} open</span></div>
+        {live.length === 0 ? <p className="dim">No open orders yet. New orders appear here the moment a client checks out.</p> : (
+          <div className="live-orders">
             {live.map((o) => (
               <Link key={o.id} href={`/ops/${o.departmentId}?order=${o.id}`} className="live-chip">
                 <span className={`stage-dot ${o.stage}`} />
@@ -100,34 +142,8 @@ export function Overview() {
               </Link>
             ))}
           </div>
-        </section>
-
-        <aside className="ops-cards" aria-label="Summary">
-          <div className="g-card big">
-            <div className="g-loc"><Coin size={16} /> Open pipeline</div>
-            <div className="g-temp">{formatUsd(total.pipelineUsd).replace(".00", "")}</div>
-            <div className="g-meta">
-              <span><Users size={14} /> {total.clients} clients</span>
-              <span>{formatUsd(deposits.collected).replace(".00", "")} collected</span>
-              <span><Bot size={14} /> {workers.filter((w) => w.kind === "ai").length} AI</span>
-            </div>
-          </div>
-          {DEPARTMENTS.map((d) => {
-            const s = summarize(ordersFor(orders, d.id));
-            return (
-              <Link key={d.id} href={`/ops/${d.id}`} className="g-card dept" style={{ "--dept": d.accent } as React.CSSProperties}>
-                <div>
-                  <small>Department</small>
-                  <b>{d.name}</b>
-                  <span>{s.requests > 0 ? `${s.requests} new request${s.requests === 1 ? "" : "s"}` : s.active > 0 ? "In production" : "All clear"}</span>
-                </div>
-                <div className="g-num">{s.active + s.requests}<em>{DEPT_ICON[d.id]}</em></div>
-                <ArrowUpRight size={14} className="g-go" />
-              </Link>
-            );
-          })}
-        </aside>
-      </div>
+        )}
+      </section>
     </OpsFrame>
   );
 }

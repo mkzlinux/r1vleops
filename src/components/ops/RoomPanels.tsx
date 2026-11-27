@@ -52,7 +52,7 @@ export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign, onRe
   const msg = `Hi ${order.client.name.split(" ")[0]}, update on your R1VLE project (${order.trackingCode}): ${stageLabel(order.stage)}, ${order.progress}% complete. Track it here: ${trackUrl}`;
 
   return (
-    <aside className="drawer glass-panel" aria-label={`Order ${order.invoiceNo}`}>
+    <aside className="drawer" aria-label={`Order ${order.invoiceNo}`}>
       <header>
         <span className={`stage-pill ${order.stage}`}>{stageLabel(order.stage)}</span>
         <button type="button" onClick={onClose} aria-label="Close order"><Close size={16} /></button>
@@ -115,16 +115,40 @@ export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign, onRe
   );
 }
 
-export function ClientsList({ clients }: { clients: readonly ClientRow[] }) {
+export function ClientsList({ clients, orders, onOpen }: { clients: readonly ClientRow[]; orders: readonly Order[]; onOpen: (orderId: string) => void }) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
   if (clients.length === 0) return <p className="g-empty">No clients yet.</p>;
+  const byId = new Map(orders.map((o) => [o.id, o]));
   return (
     <>
-      {clients.map((c) => (
-        <div key={c.key} className="g-row">
-          <div><b>{c.name}</b><small>{c.company || "Individual"} · {c.orders} order{c.orders === 1 ? "" : "s"}</small></div>
-          <div className="g-row-end"><b>{formatUsd(c.lifetimeUsd)}</b>{c.whatsapp && <a href={whatsappLink(c.whatsapp, `Hi ${c.name.split(" ")[0]}, it's R1VLE.`)} target="_blank" rel="noopener noreferrer">WhatsApp</a>}</div>
-        </div>
-      ))}
+      {clients.map((c) => {
+        const isOpen = openKey === c.key;
+        const history = c.orderIds.map((id) => byId.get(id)).filter((o): o is Order => !!o).reverse();
+        return (
+          <div key={c.key} className={`cl-item${isOpen ? " open" : ""}`}>
+            <button type="button" className="g-row click" aria-expanded={isOpen} onClick={() => setOpenKey(isOpen ? null : c.key)}>
+              <span className="g-av" aria-hidden="true">{c.name.trim().charAt(0).toUpperCase() || "?"}</span>
+              <div className="g-grow"><b>{c.name}{c.orders > 1 && <span className="cl-badge">Returning · {c.orders}</span>}</b><small>{c.email} · {c.company || "Individual"}</small></div>
+              <div className="g-row-end"><b>{formatUsd(c.lifetimeUsd)}</b><small>Last {new Date(c.lastOrderAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</small></div>
+            </button>
+            {isOpen && (
+              <div className="cl-history">
+                {history.map((o) => (
+                  <button key={o.id} type="button" onClick={() => onOpen(o.id)}>
+                    <span className={`stage-dot ${o.stage}`} />
+                    <span className="g-grow">{o.invoiceNo} · {o.lines.map((l) => l.name).join(", ")}</span>
+                    <span>{formatUsd(orderTotals(o).total)}</span>
+                  </button>
+                ))}
+                <div className="quick">
+                  {c.whatsapp && <a href={whatsappLink(c.whatsapp, `Hi ${c.name.split(" ")[0]}, it's R1VLE.`)} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
+                  <a href={`mailto:${c.email}`}>Email</a>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </>
   );
 }

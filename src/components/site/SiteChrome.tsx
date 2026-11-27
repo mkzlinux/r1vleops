@@ -8,9 +8,9 @@ import { DEFAULT_WA_MESSAGE, waLink } from "@/lib/config";
 import { useBucket } from "../bucket/BucketProvider";
 import { ArrowUpRight, BucketIcon, WhatsApp } from "../Icons";
 
-export function Brand({ tone = "dark", height = 22 }: { tone?: "dark" | "light"; height?: number }) {
+export function Brand({ tone = "dark", height = 22, href = "/" }: { tone?: "dark" | "light"; height?: number; href?: string }) {
   return (
-    <Link href="/" className="brand" aria-label="R1VLE home">
+    <Link href={href} className="brand" aria-label={href === "/" ? "R1VLE home" : "R1VLE Ops home"}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/brand/r1vle-wordmark-${tone === "dark" ? "black" : "white"}.png`} alt="R1VLE" width={Math.round(height * 4.05)} height={height} className="logo-img" />
     </Link>
@@ -40,7 +40,7 @@ const LINKS = [
   { href: "/#departments", label: "Departments" },
   { href: "/#process", label: "How it works" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/track", label: "Track" },
+  { href: "/orders", label: "My orders" },
 ];
 
 export function SiteNav() {

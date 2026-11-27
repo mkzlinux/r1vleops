@@ -2,6 +2,7 @@ import { SERVICES } from "../catalog";
 import { advanceOrder, buildOrder, isValidTrackingCode, normalizeTrackingCode, validateNewOrder } from "../orders";
 import type { OrderAdvance } from "../orders";
 import { attachmentKey, validateFiles } from "../files";
+import { clientKey } from "../opsStats";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 import { SEED_WORKERS, seedOrders } from "./seed";
@@ -126,6 +127,14 @@ export function createLocalRepository(
       if (!isValidTrackingCode(code)) return null;
       const wanted = normalizeTrackingCode(code);
       return read().orders.find((o) => o.trackingCode === wanted) ?? null;
+    },
+    async findClientOrders(email, code) {
+      const key = clientKey(email);
+      if (!key || !isValidTrackingCode(code)) return [];
+      const all = read().orders;
+      const wanted = normalizeTrackingCode(code);
+      if (!all.some((o) => o.trackingCode === wanted && clientKey(o.client.email) === key)) return [];
+      return all.filter((o) => clientKey(o.client.email) === key).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     },
     async listOrders() {
       return [...read().orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
