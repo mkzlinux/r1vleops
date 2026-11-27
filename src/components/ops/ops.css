@@ -136,6 +136,11 @@ textarea.g-input { min-height: 72px; resize: vertical; }
 .dr-files { display: grid; gap: 6px; }
 .dr-files small { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
 .dr-files button { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 12px; border: 1px dashed rgba(200, 245, 59, 0.5); background: rgba(200, 245, 59, 0.06); color: #fff; cursor: pointer; font: inherit; font-size: 13px; }
+.dr-pay { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; padding: 9px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 13px; }
+.dr-pay span:last-child { color: rgba(255, 255, 255, 0.6); text-transform: capitalize; }
+.dr-pay.paid span:last-child { color: var(--signal); }
+.dr-pay.failed span:last-child, .dr-pay.expired span:last-child { color: #ff8a80; }
+.dr-recheck { border: 1px solid rgba(200, 245, 59, 0.5); background: none; color: var(--signal); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer; }
 .dr-files span { color: rgba(255, 255, 255, 0.55); }
 .dr-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .dr-row label, .dr-range { display: grid; gap: 4px; font-size: 12px; color: rgba(255, 255, 255, 0.65); }

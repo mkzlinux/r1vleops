@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useCallback, useState } from "react";
 import "@/components/site/site.css";
 import "@/components/client/client.css";
 import { ArrowLeft } from "@/components/Icons";
@@ -14,8 +14,12 @@ function InvoiceLoader() {
   const params = useParams<{ code: string }>();
   const search = useSearchParams();
   const code = decodeURIComponent(params.code ?? "");
-  const state = useOrderByCode(code);
-  if (state.status === "found") return <InvoiceView order={state.order} isNew={search.get("new") === "1"} filesFailed={search.get("files") === "failed"} />;
+  const [version, setVersion] = useState(0);
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const state = useOrderByCode(code, version);
+  if (state.status === "found") {
+    return <InvoiceView order={state.order} isNew={search.get("new") === "1"} filesFailed={search.get("files") === "failed"} onPaid={reload} resumePaymentId={search.get("payment")} />;
+  }
   if (state.status === "error") return <p className="wrap error-box" role="alert">{state.message}</p>;
   if (state.status === "missing") return <p className="empty">No invoice matches code <span className="mono">{code}</span>.</p>;
   return <p className="empty">Loading invoice…</p>;

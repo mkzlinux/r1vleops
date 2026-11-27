@@ -6,19 +6,35 @@ import { formatBytes } from "@/lib/files";
 import { waLink } from "@/lib/config";
 import { formatUsd, orderTotals, stageLabel } from "@/lib/orders";
 import type { Order } from "@/lib/types";
+import { isCloudflareBackend } from "@/lib/data";
+import { USDC_CHAINS, payableKinds, type UsdcChain } from "@/lib/payments";
 import { ArrowUpRight, Printer, WhatsApp } from "../Icons";
+import { PayPanel } from "./PayPanel";
 
 const fmtDate = (iso: string): string => {
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 };
 
-export function InvoiceView({ order, isNew, filesFailed = false }: { order: Order; isNew: boolean; filesFailed?: boolean }) {
+const CHANNEL_NAMES: Record<string, string> = { ecocash: "EcoCash", onemoney: "OneMoney", innbucks: "InnBucks", web: "Paynow" };
+const paidVia = (channel: string): string => CHANNEL_NAMES[channel] ?? `USDC · ${USDC_CHAINS[channel as UsdcChain]?.label ?? channel}`;
+
+interface InvoiceViewProps { order: Order; isNew: boolean; filesFailed?: boolean; onPaid?: () => void; resumePaymentId?: string | null }
+
+export function InvoiceView({ order, isNew, filesFailed = false, onPaid = () => undefined, resumePaymentId = null }: InvoiceViewProps) {
   const totals = orderTotals(order);
   const dept = departmentById(order.departmentId);
   const isPaidUp = order.stage === "closed";
   const payMsg = `Hi R1VLE, please send deposit payment details for invoice ${order.invoiceNo} (code ${order.trackingCode}). Deposit: ${formatUsd(totals.deposit)}.`;
   const attachments = order.attachments ?? [];
+  const received = (order.payments ?? []).filter((p) => p.status === "paid");
+  const due = payableKinds(order)[0];
+  const canPayOnline = isCloudflareBackend;
+  const barNote = !due
+    ? order.stage === "closed" ? "Paid in full. Thank you." : "Deposit received. Follow progress with your tracking code."
+    : canPayOnline
+      ? `Pay the ${due} below with Paynow or USDC.${due === "deposit" ? ` Work starts once your ${order.depositPct}% deposit is confirmed.` : ""}`
+      : `Ask us for ${due} payment details on WhatsApp.${due === "deposit" ? ` Work starts once your ${order.depositPct}% deposit is confirmed.` : ""}`;
 
   return (
     <>
@@ -26,14 +42,16 @@ export function InvoiceView({ order, isNew, filesFailed = false }: { order: Orde
         <div>
           {isNew && <p style={{ margin: 0, fontWeight: 700 }}>Order placed. Save your tracking code: <span className="mono">{order.trackingCode}</span></p>}
           {filesFailed && <p className="error-box" role="alert" style={{ margin: "6px 0" }}>Your order is saved, but your files didn&apos;t upload. Please send them to us on WhatsApp.</p>}
-          <p style={{ margin: 0, color: "var(--mute)", fontSize: 14 }}>Ask us for deposit details on WhatsApp. Work starts once your 50% deposit is confirmed.</p>
+          <p style={{ margin: 0, color: "var(--mute)", fontSize: 14 }}>{barNote}</p>
         </div>
         <div className="tools">
           <button type="button" className="btn btn-light btn-plain" onClick={() => window.print()}><Printer size={16} />&nbsp;Print / PDF</button>
-          <a className="btn btn-wa" href={waLink(payMsg)} target="_blank" rel="noopener noreferrer"><WhatsApp size={18} /> Get deposit details</a>
+          <a className="btn btn-wa" href={waLink(canPayOnline ? `Hi R1VLE, a question about invoice ${order.invoiceNo} (${order.trackingCode}).` : payMsg)} target="_blank" rel="noopener noreferrer"><WhatsApp size={18} /> {canPayOnline ? "Ask on WhatsApp" : "Get deposit details"}</a>
           <Link className="btn btn-dark" href={`/track?code=${order.trackingCode}`}><span>Track</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
         </div>
       </div>
+
+      <div className="wrap"><PayPanel order={order} onPaid={onPaid} resumePaymentId={resumePaymentId} /></div>
 
       <article className="sheet" aria-label={`Invoice ${order.invoiceNo}`}>
         <div className="strip-top">
@@ -90,11 +108,18 @@ export function InvoiceView({ order, isNew, filesFailed = false }: { order: Orde
           <div>
             <p className="label">04 / Payment</p>
             <div className="pay-methods">
-              {PAYMENT_METHODS.map((m) => <span key={m.id}>{m.label}<em>{m.status === "soon" ? "soon" : "on request"}</em></span>)}
+              {PAYMENT_METHODS.map((m) => <span key={m.id}>{m.label}{m.status !== "live" && <em>{m.status === "soon" ? "soon" : "on request"}</em>}</span>)}
             </div>
             <p className="sub" style={{ marginTop: 8 }}>{PAYMENT_NOTE} Use your invoice number as the payment reference.</p>
           </div>
         </section>
+
+        {received.length > 0 && (
+          <section>
+            <p className="label">Payments received</p>
+            <ul className="inv-files">{received.map((p) => <li key={p.id}>{p.kind === "deposit" ? "Deposit" : "Balance"} · {paidVia(p.channel)}{p.paidAt ? ` · ${fmtDate(p.paidAt)}` : ""}<span>{formatUsd(p.amountUsd)}</span></li>)}</ul>
+          </section>
+        )}
 
         {attachments.length > 0 && (
           <section>

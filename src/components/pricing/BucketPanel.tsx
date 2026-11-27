@@ -57,8 +57,8 @@ function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
         <span>Checkout · get invoice</span><span className="arrow"><ArrowUpRight size={16} /></span>
       </Link>
       <div className="pay-soon" aria-label="Payment methods">
-        {PAYMENT_METHODS.slice(0, 3).map((m) => <span key={m.id}>{m.label}</span>)}
-        <em>online pay coming soon</em>
+        {PAYMENT_METHODS.filter((m) => m.status === "live").map((m) => <span key={m.id}>{m.label}</span>)}
+        <em>pay online after checkout</em>
       </div>
     </>
   );

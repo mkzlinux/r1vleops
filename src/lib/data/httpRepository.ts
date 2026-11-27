@@ -9,9 +9,9 @@ export class ApiError extends Error {
   constructor(readonly status: number, message: string) { super(message); }
 }
 
-/** Talks to the Next.js API routes, which hold the Cloudflare D1/R2 credentials server-side. */
-export function createHttpRepository(fetcher: Fetch = (...args) => fetch(...args)): R1vleRepository {
-  const call = async <T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> => {
+/** JSON call to our API: unwraps `{ data }`, throws ApiError with the server's message otherwise. */
+export function apiCaller(fetcher: Fetch = (...args) => fetch(...args)) {
+  return async <T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> => {
     let res: Response;
     try {
       res = await fetcher(path, {
@@ -28,6 +28,11 @@ export function createHttpRepository(fetcher: Fetch = (...args) => fetch(...args
     if (!res.ok) throw new ApiError(res.status, payload.error ?? "Something went wrong. Please try again.");
     return payload.data as T;
   };
+}
+
+/** Talks to the Next.js API routes, which hold the Cloudflare D1/R2 credentials server-side. */
+export function createHttpRepository(fetcher: Fetch = (...args) => fetch(...args)): R1vleRepository {
+  const call = apiCaller(fetcher);
 
   return {
     mode: "cloudflare",

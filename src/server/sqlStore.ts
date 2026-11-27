@@ -4,6 +4,7 @@ import { SEED_WORKERS } from "@/lib/data/seed";
 import { MAX_FILES, attachmentKey, validateFiles } from "@/lib/files";
 import { advanceOrder as applyAdvance, buildOrder, isValidTrackingCode, normalizeTrackingCode, validateNewOrder, type OrderAdvance } from "@/lib/orders";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, ProjectUpdate, Service, Worker } from "@/lib/types";
+import { paymentsFor } from "./paymentStore";
 import type { SqlClient, SqlValue } from "./sql";
 
 /** A problem with the caller's input or target: safe to show to the user. */
@@ -75,8 +76,8 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
   const loadOrder = async (where: string, params: readonly SqlValue[], includeContact: boolean): Promise<Order | null> => {
     const [row] = await sql.query<OrderRow>(`SELECT * FROM orders WHERE ${where} LIMIT 1`, params);
     if (!row) return null;
-    const updates = await updatesFor([row.id]);
-    return toOrder(row, updates.get(row.id) ?? [], includeContact);
+    const [updates, payments] = await Promise.all([updatesFor([row.id]), paymentsFor(sql, [row.id])]);
+    return { ...toOrder(row, updates.get(row.id) ?? [], includeContact), payments: payments.get(row.id) ?? [] };
   };
 
   const requireOrder = async (id: string): Promise<Order> => {
@@ -150,8 +151,9 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
 
     async listOrders(): Promise<Order[]> {
       const rows = await sql.query<OrderRow>("SELECT * FROM orders ORDER BY created_at DESC LIMIT 500");
-      const updates = await updatesFor(rows.map((r) => r.id));
-      return rows.map((r) => toOrder(r, updates.get(r.id) ?? [], true));
+      const ids = rows.map((r) => r.id);
+      const [updates, payments] = await Promise.all([updatesFor(ids), paymentsFor(sql, ids)]);
+      return rows.map((r) => ({ ...toOrder(r, updates.get(r.id) ?? [], true), payments: payments.get(r.id) ?? [] }));
     },
 
     async advanceOrder(orderId: string, change: OrderAdvance): Promise<Order> {

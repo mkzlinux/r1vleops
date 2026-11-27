@@ -5,6 +5,9 @@ import { SESSION_COOKIE, verifySessionToken } from "./auth";
 import { r2Client, r2SecretFromToken } from "./r2";
 import { hitRateLimit, type RateLimitOptions } from "./rateLimit";
 import { d1HttpClient, type SqlClient } from "./sql";
+import { DEFAULT_RPC } from "./chains";
+import { createPaymentService, type PaymentService } from "./paymentService";
+import { paynowClient } from "./paynow";
 import { StoreError, createSqlStore, type SqlStore } from "./sqlStore";
 
 /** Required server env for the Cloudflare backend. Values never reach the browser. */
@@ -21,7 +24,7 @@ export class HttpError extends Error {
   constructor(readonly status: number, message: string) { super(message); }
 }
 
-interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client> }
+interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService }
 let backend: Promise<Backend> | null = null;
 
 export function getBackend(): Promise<Backend> {
@@ -30,7 +33,8 @@ export function getBackend(): Promise<Backend> {
     const apiToken = env("CLOUDFLARE_API_TOKEN");
     const sql = d1HttpClient({ accountId, databaseId: env("CLOUDFLARE_D1_DATABASE_ID"), apiToken, apiBase: process.env.CLOUDFLARE_API_BASE });
     const r2 = r2Client({ accountId, bucket: process.env.R2_BUCKET || "r1vleops-order-files", accessKeyId: env("CLOUDFLARE_API_TOKEN_ID"), secretAccessKey: await r2SecretFromToken(apiToken) });
-    return { sql, r2, store: createSqlStore(sql, { blobs: r2.blobs }) };
+    const store = createSqlStore(sql, { blobs: r2.blobs });
+    return { sql, r2, store, payments: paymentServiceFor(store) };
   })().catch((err: unknown) => { backend = null; throw err; });
   return backend;
 }
@@ -78,4 +82,26 @@ export async function respond<T>(fn: () => Promise<T>, status = 200): Promise<Ne
     console.error("API error", err);
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
+}
+
+const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+const XRPL_ADDRESS = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
+const wallet = (name: string, pattern: RegExp): string | undefined => {
+  const v = process.env[name]?.trim();
+  if (!v) return undefined;
+  if (!pattern.test(v)) { console.error(`${name} is not a valid address; that network is disabled.`); return undefined; }
+  return v;
+};
+
+/** Paynow and USDC are each enabled only when their settings are present. */
+function paymentServiceFor(store: SqlStore): PaymentService {
+  const id = process.env.PAYNOW_INTEGRATION_ID?.trim();
+  const key = process.env.PAYNOW_INTEGRATION_KEY?.trim();
+  return createPaymentService({
+    store,
+    siteUrl: (process.env.SITE_URL || "https://r1vleops.vercel.app").replace(/\/$/, ""),
+    paynow: id && key ? paynowClient({ integrationId: id, integrationKey: key }) : null,
+    wallets: { base: wallet("USDC_WALLET_BASE", EVM_ADDRESS), bsc: wallet("USDC_WALLET_BSC", EVM_ADDRESS), xrpl: wallet("USDC_WALLET_XRPL", XRPL_ADDRESS) },
+    rpc: { base: process.env.USDC_RPC_BASE || DEFAULT_RPC.base, bsc: process.env.USDC_RPC_BSC || DEFAULT_RPC.bsc, xrpl: process.env.USDC_RPC_XRPL || DEFAULT_RPC.xrpl },
+  });
 }

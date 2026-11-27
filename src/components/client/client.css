@@ -127,3 +127,37 @@
 .inv-files li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed #d9d9d9; padding: 6px 0; }
 .inv-files span { color: #6b6b6b; }
 .brand .logo-img { height: 22px; width: auto; }
+
+/* ---------- Pay panel (invoice) ---------- */
+.pay-panel { max-width: 820px; margin: 0 auto 22px; padding: clamp(18px, 3vw, 26px); border-radius: 26px; background: linear-gradient(160deg, #15171a, #24282d); color: #fff; display: grid; gap: 14px; box-shadow: 0 30px 60px -30px rgba(14, 15, 17, 0.6); }
+.pay-panel.done { grid-template-columns: auto 1fr; align-items: center; background: linear-gradient(160deg, #1c2410, #2c3a12); }
+.pay-panel h2 { margin: 0; font-size: clamp(19px, 2.6vw, 24px); letter-spacing: -0.02em; }
+.pay-panel p { margin: 0; color: rgba(255, 255, 255, 0.72); font-size: 14px; }
+.pp-head { display: flex; align-items: center; gap: 12px; }
+.pp-ico, .pp-ok { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--signal); color: #0e0f11; flex: none; }
+.pp-ok { border-radius: 50%; width: 46px; height: 46px; }
+.pp-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: rgba(255, 255, 255, 0.07); border-radius: 999px; padding: 4px; }
+.pp-tabs button { border: 0; background: none; color: rgba(255, 255, 255, 0.7); font: inherit; font-weight: 600; font-size: 14px; padding: 10px 12px; border-radius: 999px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.pp-tabs button.on { background: #fff; color: #0e0f11; }
+.pp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pp-chips button { border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.04); color: #fff; font: inherit; font-size: 14px; font-weight: 600; padding: 10px 14px; border-radius: 14px; cursor: pointer; min-height: 44px; transition: border-color 0.2s, background 0.2s; }
+.pp-chips button.on { border-color: var(--signal); background: rgba(200, 245, 59, 0.12); }
+.pp-chips button:focus-visible, .pp-tabs button:focus-visible, .pp-copy button:focus-visible, .pp-link:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.pay-panel .field label { color: rgba(255, 255, 255, 0.7); }
+.pay-panel .input { background: rgba(255, 255, 255, 0.95); }
+.pay-panel .btn { justify-self: start; }
+.pp-copy { display: grid; gap: 6px; }
+.pp-copy small { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.pp-copy > div { display: flex; align-items: center; gap: 10px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 10px 10px 10px 14px; min-width: 0; }
+.pp-copy.important > div { border-color: var(--signal); }
+.pp-copy code { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: 15px; overflow-wrap: anywhere; }
+.pp-copy.important code { font-size: 19px; color: var(--signal); }
+.pp-copy button { border: 0; border-radius: 10px; background: #fff; color: #0e0f11; font: inherit; font-weight: 700; font-size: 13px; padding: 8px 12px; cursor: pointer; flex: none; }
+.pp-warn { background: rgba(224, 64, 58, 0.14); border: 1px solid rgba(224, 64, 58, 0.45); border-radius: 14px; padding: 10px 14px; color: #fff !important; }
+.pp-note { font-size: 13px !important; }
+.pp-wait { display: flex; gap: 10px; align-items: center; }
+.pp-wait i { width: 10px; height: 10px; border-radius: 50%; background: var(--signal); flex: none; animation: pp-pulse 1.4s ease-in-out infinite; }
+@keyframes pp-pulse { 50% { opacity: 0.25; transform: scale(0.7); } }
+@media (prefers-reduced-motion: reduce) { .pp-wait i { animation: none; } }
+.pp-link { justify-self: start; background: none; border: 0; color: var(--signal); font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 4px 0; }
+.pay-panel .error-box .pp-link { color: inherit; }

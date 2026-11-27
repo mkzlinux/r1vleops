@@ -26,3 +26,15 @@ describe("request validation", () => {
     expect(() => parseFileMetas({ files: [{ name: "a.png", type: "image/png", size: -1 }] })).toThrow();
   });
 });
+
+import { parseStartPayment } from "@/server/validate";
+
+describe("payment request validation", () => {
+  test("accepts Paynow and USDC requests and rejects unknown options", () => {
+    expect(parseStartPayment({ kind: "deposit", method: "paynow", channel: "ecocash", phone: "0771234567" })).toEqual({ kind: "deposit", method: "paynow", channel: "ecocash", phone: "0771234567" });
+    expect(parseStartPayment({ kind: "balance", method: "usdc", channel: "xrpl", amount: 1 })).toEqual({ kind: "balance", method: "usdc", channel: "xrpl" });
+    expect(() => parseStartPayment({ kind: "deposit", method: "usdc", channel: "ethereum" })).toThrow();
+    expect(() => parseStartPayment({ kind: "tip", method: "paynow", channel: "web" })).toThrow();
+    expect(() => parseStartPayment({ kind: "deposit", method: "paypal", channel: "web" })).toThrow();
+  });
+});

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { DEPARTMENTS, servicesFor } from "@/lib/catalog";
 import { getRepository } from "@/lib/data";
+import { checkPayment } from "@/lib/data/paymentsApi";
 import { formatUsd, orderTotals, stageLabel } from "@/lib/orders";
 import { clientsFrom, isActive, ordersFor, summarize } from "@/lib/opsStats";
 import type { DepartmentId, Order } from "@/lib/types";
@@ -110,6 +111,7 @@ export function RoomView({ room }: { room: RoomId }) {
             onClose={() => setOpenId(null)}
             onAdvance={(change) => run(() => repo.advanceOrder(openOrder.id, change))}
             onAssign={(id) => run(() => repo.assignWorker(openOrder.id, id))}
+            onRecheck={repo.mode === "cloudflare" ? (paymentId) => run(() => checkPayment(openOrder.trackingCode, paymentId)) : undefined}
           />
         )}
       </div>

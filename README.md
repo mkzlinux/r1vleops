@@ -60,6 +60,36 @@ Security: prices are always recomputed on the server; public tracking hides cont
 brief; public endpoints are rate limited per IP in D1; `/ops` APIs need an httpOnly, SameSite=strict,
 HMAC-signed session cookie and same-origin requests.
 
+## Online payments: Paynow and USDC
+
+Clients pay from their invoice page (`/invoice/<code>`): the **deposit** while the order awaits it,
+and the **balance** once work is in review or delivered. Amounts always come from the stored invoice.
+A confirmed deposit moves the order to "Deposit confirmed"; a confirmed balance closes it. Every
+payment shows in `/ops` (order drawer, with a Re-check button) and as a receipt line on the invoice.
+
+| Option | How it's confirmed |
+|--------|--------------------|
+| Paynow: EcoCash, OneMoney, InnBucks (push to phone) and cards (Paynow page) | Paynow's signed status update to `/api/paynow/result`, plus polling. Hash verified (SHA-512) and the paid amount must cover what's due |
+| USDC on Base or BNB Smart Chain (BEP-20) | Each payment gets a unique amount (up to $0.009999 extra); the server finds that exact Transfer to your wallet on-chain |
+| USDC on the XRP Ledger | A unique destination tag; the server finds a validated USDC payment (Circle issuer) with that tag |
+
+A transaction or Paynow reference can only ever settle one payment. Unpaid requests expire after 24 hours.
+
+Settings (Vercel → Environment Variables). Each option switches on only when its settings exist:
+
+| Name | Value |
+|------|-------|
+| `PAYNOW_INTEGRATION_ID` | from Paynow → Receive payments → your USD integration |
+| `PAYNOW_INTEGRATION_KEY` | the integration key (Sensitive) |
+| `USDC_WALLET_BASE` | your 0x… wallet on Base |
+| `USDC_WALLET_BSC` | your 0x… wallet on BNB Smart Chain |
+| `USDC_WALLET_XRPL` | your r… XRPL address. It needs a trust line to USDC issuer `rGm7WCVp9gb4jZHWTEtGUr4dd74z2XuWhE` |
+| `SITE_URL` | optional, defaults to `https://r1vleops.vercel.app` (Paynow return/result links) |
+| `USDC_RPC_BASE`, `USDC_RPC_BSC`, `USDC_RPC_XRPL` | optional, override the public RPC endpoints |
+
+USDC contracts used: Base `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (6 decimals, Circle);
+BNB Smart Chain `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` (Binance-Peg USDC, 18 decimals).
+
 ## Connecting Supabase (alternative)
 
 1. Create a project, run `supabase/migrations/0001_init.sql`, `0002_items_and_files.sql`, `0003_regional_pricing.sql`, then `supabase/seed.sql`.

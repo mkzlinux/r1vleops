@@ -24,9 +24,11 @@ interface DrawerProps {
   readonly onClose: () => void;
   readonly onAdvance: (change: OrderAdvance) => Promise<string | null>;
   readonly onAssign: (workerId: string | null) => Promise<string | null>;
+  /** Re-checks a pending online payment (Paynow / blockchain). */
+  readonly onRecheck?: (paymentId: string) => Promise<string | null>;
 }
 
-export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign }: DrawerProps) {
+export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign, onRecheck }: DrawerProps) {
   const [stage, setStage] = useState<Stage>(order.stage);
   const [progress, setProgress] = useState(order.progress);
   const [note, setNote] = useState("");
@@ -68,6 +70,18 @@ export function OrderDrawer({ order, workers, onClose, onAdvance, onAssign }: Dr
         <div className="dr-files">
           <small>Client files</small>
           {order.attachments?.map((a) => <button key={a.key} type="button" onClick={() => openFile(a.key)}>{a.name}<span>{formatBytes(a.size)}</span></button>)}
+        </div>
+      )}
+      {(order.payments?.length ?? 0) > 0 && (
+        <div className="dr-files">
+          <small>Payments</small>
+          {order.payments?.map((p) => (
+            <div key={p.id} className={`dr-pay ${p.status}`}>
+              <span>{p.kind === "deposit" ? "Deposit" : "Balance"} · {p.method === "usdc" ? `USDC ${p.channel.toUpperCase()}` : p.channel === "web" ? "Paynow" : p.channel} · {formatUsd(p.amountUsd)}</span>
+              <span>{p.status}{p.proof ? ` · ${p.proof.slice(0, 14)}…` : ""}</span>
+              {p.status === "pending" && onRecheck && <button type="button" className="dr-recheck" disabled={isBusy} onClick={() => onRecheck(p.id)}>Re-check</button>}
+            </div>
+          ))}
         </div>
       )}
       <div className="quick">

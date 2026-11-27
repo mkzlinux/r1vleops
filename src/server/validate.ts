@@ -1,6 +1,8 @@
 import { DEPARTMENTS } from "@/lib/catalog";
 import type { OrderAdvance } from "@/lib/orders";
 import { STAGES, type DepartmentId, type NewOrderInput, type NewWorkerInput, type Region, type Stage } from "@/lib/types";
+import { PAYNOW_CHANNELS, USDC_CHAIN_IDS, type PaymentKind, type PaynowChannel, type UsdcChain } from "@/lib/payments";
+import type { StartPayment } from "./paymentService";
 import { StoreError, type FileMeta } from "./sqlStore";
 
 /** Shape checks for untrusted JSON at the API boundary. Business rules run afterwards in the store. */
@@ -45,4 +47,15 @@ export function parseFileMetas(body: unknown): FileMeta[] {
     if (size < 0) fail("file size");
     return { name: str(f.name, "file name", 255), type: optStr(f.type, "file type", 120), size };
   });
+}
+
+const KINDS: readonly PaymentKind[] = ["deposit", "balance"];
+const PAYNOW_IDS: readonly PaynowChannel[] = PAYNOW_CHANNELS.map((c) => c.id);
+
+export function parseStartPayment(body: unknown): StartPayment {
+  const b = obj(body, "payment");
+  const kind = oneOf(b.kind, KINDS, "payment type");
+  if (b.method === "paynow") return { kind, method: "paynow", channel: oneOf(b.channel, PAYNOW_IDS, "payment option"), phone: optStr(b.phone, "phone number", 30) };
+  if (b.method === "usdc") return { kind, method: "usdc", channel: oneOf<UsdcChain>(b.channel, USDC_CHAIN_IDS, "USDC network") };
+  return fail("payment method");
 }

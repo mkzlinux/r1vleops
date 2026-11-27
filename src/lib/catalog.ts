@@ -9,7 +9,7 @@ export const COMPANY = {
   depositPct: 50,
 } as const;
 
-export type PaymentMethodStatus = "soon" | "on-request";
+export type PaymentMethodStatus = "live" | "soon" | "on-request";
 
 export interface PaymentMethod {
   readonly id: string;
@@ -20,14 +20,14 @@ export interface PaymentMethod {
 
 /** How clients will pay. Online checkout for these is planned; until then deposits are arranged on WhatsApp. */
 export const PAYMENT_METHODS: readonly PaymentMethod[] = [
-  { id: "ecocash", label: "EcoCash", detail: "Local mobile money", status: "soon" },
+  { id: "paynow", label: "EcoCash · OneMoney · InnBucks · Cards", detail: "Local payments via Paynow", status: "live" },
+  { id: "usdc", label: "USDC", detail: "Base, BNB Smart Chain or XRP Ledger", status: "live" },
   { id: "paypal", label: "PayPal", detail: "International cards & PayPal", status: "soon" },
-  { id: "usdc", label: "USDC", detail: "Stablecoin on-chain payment", status: "soon" },
   { id: "bank", label: "Bank transfer", detail: "Details shared on WhatsApp", status: "on-request" },
 ];
 
 export const PAYMENT_NOTE =
-  "Online payments (EcoCash, PayPal, USDC) are coming soon. For now, message us on WhatsApp and we'll send deposit details for your invoice.";
+  "Pay online from this invoice page with Paynow (EcoCash, OneMoney, InnBucks, cards) or USDC. Payments are confirmed automatically.";
 
 export const DEPARTMENTS: readonly Department[] = [
   {

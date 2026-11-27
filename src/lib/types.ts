@@ -1,3 +1,5 @@
+import type { Payment } from "./payments";
+
 export type DepartmentId = "security" | "intelligence" | "creative";
 
 export interface Department {
@@ -91,6 +93,8 @@ export interface Order {
   /** Price list the order was quoted on (missing on older orders = international). */
   readonly region?: Region;
   readonly attachments?: readonly Attachment[];
+  /** Online payments (Paynow / USDC) made against this invoice. */
+  readonly payments?: readonly Payment[];
 }
 
 export type WorkerKind = "ai" | "human";

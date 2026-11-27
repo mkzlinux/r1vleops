@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { departmentById } from "@/lib/catalog";
 import { waLink } from "@/lib/config";
+import { isCloudflareBackend } from "@/lib/data";
+import { amountDue, payableKinds } from "@/lib/payments";
 import { formatUsd, normalizeTrackingCode, orderTotals, stageLabel } from "@/lib/orders";
 import { STAGES, type Order } from "@/lib/types";
 import { ArrowUpRight, WhatsApp } from "../Icons";
@@ -61,6 +63,9 @@ function OrderStatus({ order }: { order: Order }) {
             <div style={{ display: "flex", justifyContent: "space-between" }}><span>Balance on delivery</span><b>{formatUsd(totals.balance)}</b></div>
           </div>
           <div style={{ display: "grid", gap: 8 }}>
+            {payableKinds(order).length > 0 && isCloudflareBackend && (
+              <Link className="btn btn-lime" href={`/invoice/${order.trackingCode}`} style={{ justifyContent: "space-between" }}><span>{payableKinds(order)[0] === "deposit" ? "Pay deposit" : "Pay balance"} · {formatUsd(amountDue(order, payableKinds(order)[0]))}</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
+            )}
             <Link className="btn btn-dark" href={`/invoice/${order.trackingCode}`} style={{ justifyContent: "space-between" }}><span>View invoice</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
             <a className="btn btn-wa" style={{ justifyContent: "center" }} href={waLink(`Hi R1VLE, a question about my project ${order.trackingCode}.`)} target="_blank" rel="noopener noreferrer"><WhatsApp size={18} /> Ask about this project</a>
           </div>

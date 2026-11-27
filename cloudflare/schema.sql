@@ -52,3 +52,25 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   count INTEGER NOT NULL,
   PRIMARY KEY (key, window_start)
 );
+
+-- Online payments: Paynow (EcoCash, OneMoney, InnBucks, cards) and on-chain USDC.
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id),
+  kind TEXT NOT NULL CHECK (kind IN ('deposit', 'balance')),
+  method TEXT NOT NULL CHECK (method IN ('paynow', 'usdc')),
+  channel TEXT NOT NULL,
+  amount_usd REAL NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'failed', 'expired')),
+  created_at TEXT NOT NULL,
+  paid_at TEXT,
+  pay_amount TEXT,
+  pay_units TEXT,
+  pay_to TEXT,
+  destination_tag INTEGER,
+  poll_url TEXT,
+  scan_from INTEGER,
+  proof TEXT
+);
+CREATE INDEX IF NOT EXISTS payments_order ON payments(order_id);
+CREATE INDEX IF NOT EXISTS payments_open ON payments(method, channel, status);
