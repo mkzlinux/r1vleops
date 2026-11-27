@@ -38,7 +38,7 @@ describe("bucket", () => {
 
   test("prices the bucket with a 50% deposit", () => {
     const priced = priceBucket([{ serviceId: "cre-flyer", qty: 3 }, { serviceId: "int-site", qty: 1 }], SERVICES);
-    expect(priced.total).toBe(3 * 35 + 280);
+    expect(priced.total).toBe(3 * 60 + 1500);
     expect(priced.deposit).toBe(priced.total / 2);
     expect(priced.lines).toHaveLength(2);
   });
@@ -58,6 +58,6 @@ describe("bucket", () => {
   test("builds a WhatsApp negotiation message listing items and total", () => {
     const msg = bucketWhatsappMessage([{ serviceId: "cre-poster", qty: 2 }], SERVICES);
     expect(msg).toMatch(/2 × Poster Design/);
-    expect(msg).toMatch(/\$90/);
+    expect(msg).toMatch(/\$160/);
   });
 });

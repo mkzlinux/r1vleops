@@ -59,6 +59,12 @@ export function createPaymentStore(sql: SqlClient, now: () => Date) {
       return row ? toRecord(row) : null;
     },
 
+    /** Pending payments, oldest check first, for the background checker. */
+    async listPending(limit: number): Promise<PaymentRecord[]> {
+      const rows = await sql.query<PaymentRow>("SELECT * FROM payments WHERE status = 'pending' ORDER BY created_at LIMIT ?", [limit]);
+      return rows.map(toRecord);
+    },
+
     async openUsdcUnits(chain: UsdcChain): Promise<Set<bigint>> {
       const rows = await sql.query<{ pay_units: string }>("SELECT pay_units FROM payments WHERE method = 'usdc' AND channel = ? AND status = 'pending' AND pay_units IS NOT NULL", [chain]);
       return new Set(rows.map((r) => BigInt(r.pay_units)));

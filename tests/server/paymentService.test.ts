@@ -211,4 +211,18 @@ describe("payment service", () => {
     records.push({ type: "payment", to: WALLETS.stellar, asset_code: "USDC", asset_issuer: USDC_CHAINS.stellar.issuer, amount: "25.5000000", transaction_successful: true, transaction_hash: "XLMHASH", transaction: { memo: String(payment.destinationTag) } });
     expect((await service.refresh(order.trackingCode, payment.id)).status).toBe("paid");
   });
+
+  test("background sweep settles pending payments nobody is watching", async () => {
+    const logs: unknown[] = [];
+    const { store, service } = setup({ logs, paynowStatus: "Paid" });
+    const a = await placeOrder(store);
+    const b = await placeOrder(store);
+    const pay = (await service.start(a.trackingCode, { kind: "deposit", method: "usdc", channel: "base" })).payment;
+    await service.start(b.trackingCode, { kind: "deposit", method: "paynow", channel: "ecocash", phone: "0771111111" });
+    logs.push({ address: USDC_CHAINS.base.token, topics: ["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", "0x" + "0".repeat(64), "0x" + "0".repeat(24) + WALLETS.base.slice(2)], data: "0x" + BigInt(pay.payAmount!.replace(".", "")).toString(16), transactionHash: "0xbg" });
+    expect(await service.checkPending()).toEqual({ checked: 2, paid: 2, failed: 0, errors: 0 });
+    expect((await store.findOrderByCode(a.trackingCode, { includeContact: false }))?.stage).toBe("deposit_confirmed");
+    expect((await store.findOrderByCode(b.trackingCode, { includeContact: false }))?.stage).toBe("deposit_confirmed");
+    expect((await service.checkPending()).checked).toBe(0);
+  });
 });

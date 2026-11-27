@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { isZimbabweNumber, priceNote, regionFromCountry, unitPrice } from "@/lib/pricing";
-import { serviceById } from "@/lib/catalog";
+import { SERVICES, serviceById } from "@/lib/catalog";
 
 const flyer = serviceById("cre-flyer")!;
 const logo = serviceById("cre-logo")!;
@@ -14,14 +14,22 @@ describe("regional pricing", () => {
   });
 
   test("international keeps the list price", () => {
-    expect(unitPrice(flyer, "intl", 1)).toBe(35);
-    expect(unitPrice(flyer, "intl", 5)).toBe(35);
-    expect(unitPrice(logo, "intl", 1)).toBe(120);
+    expect(unitPrice(flyer, "intl", 1)).toBe(60);
+    expect(unitPrice(flyer, "intl", 5)).toBe(60);
+    expect(unitPrice(logo, "intl", 1)).toBe(250);
   });
 
-  test("Zimbabwe logo is $20; services without a regional price fall back", () => {
+  test("Zimbabwe keeps its local list; international uses market rates", () => {
     expect(unitPrice(logo, "zw", 1)).toBe(20);
-    expect(unitPrice(app, "zw", 1)).toBe(app.priceUsd);
+    expect(unitPrice(app, "zw", 1)).toBe(1500);
+    expect(unitPrice(app, "intl", 1)).toBe(7500);
+  });
+
+  test("every service has a Zimbabwe price at or below the international one", () => {
+    for (const s of SERVICES) {
+      expect(s.regional?.zw?.length, s.id).toBeGreaterThan(0);
+      expect(unitPrice(s, "zw", 1), s.id).toBeLessThanOrEqual(s.priceUsd);
+    }
   });
 
   test("describes volume discounts", () => {

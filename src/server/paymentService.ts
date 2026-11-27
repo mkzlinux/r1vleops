@@ -154,6 +154,29 @@ export function createPaymentService(deps: PaymentServiceDeps) {
       return toPublicPayment((await payments.get(paymentId)) as PaymentRecord);
     },
 
+    /**
+     * Background sweep: checks every pending payment (oldest first) within a time budget, so payments
+     * confirm even when nobody has the invoice open. One failing network never blocks the others.
+     */
+    async checkPending(opts: { limit?: number; budgetMs?: number } = {}): Promise<{ checked: number; paid: number; failed: number; errors: number }> {
+      const started = Date.now();
+      const pending = await payments.listPending(opts.limit ?? 50);
+      const result = { checked: 0, paid: 0, failed: 0, errors: 0 };
+      for (const p of pending) {
+        if (Date.now() - started > (opts.budgetMs ?? 20_000)) break;
+        try {
+          await check(p);
+          const after = await payments.get(p.id);
+          result.checked += 1;
+          if (after?.status === "paid") result.paid += 1;
+          else if (after?.status === "failed" || after?.status === "expired") result.failed += 1;
+        } catch {
+          result.errors += 1;
+        }
+      }
+      return result;
+    },
+
     /** Paynow server-to-server status update. Throws if the hash does not verify. */
     async handlePaynowResult(body: string): Promise<void> {
       if (!deps.paynow) throw new StoreError("Paynow is not configured.");
