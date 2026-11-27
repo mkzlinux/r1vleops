@@ -1,7 +1,7 @@
 import type { Payment, PaymentKind, PaynowChannel, UsdcChain } from "../payments";
 import { apiCaller } from "./httpRepository";
 
-export interface PaymentOptions { readonly paynow: boolean; readonly usdc: readonly UsdcChain[] }
+export interface PaymentOptions { readonly paynow: boolean; readonly paynowTest?: boolean; readonly usdc: readonly UsdcChain[] }
 export interface StartedPayment { readonly payment: Payment; readonly redirectUrl: string | null; readonly instructions: string | null }
 export type StartPaymentInput =
   | { kind: PaymentKind; method: "paynow"; channel: PaynowChannel; phone?: string }

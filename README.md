@@ -84,6 +84,7 @@ Settings (Vercel → Environment Variables). Each option switches on only when i
 | `USDC_WALLET_BASE` | your 0x… wallet on Base |
 | `USDC_WALLET_BSC` | your 0x… wallet on BNB Smart Chain |
 | `USDC_WALLET_XRPL` | your r… XRPL address. It needs a trust line to USDC issuer `rGm7WCVp9gb4jZHWTEtGUr4dd74z2XuWhE` |
+| `PAYNOW_MODE` + `PAYNOW_TEST_EMAIL` | set `PAYNOW_MODE=test` and your Paynow login email while using test keys; the pay panel then says "Test mode". Remove both when you switch to live keys |
 | `SITE_URL` | optional, defaults to `https://r1vleops.vercel.app` (Paynow return/result links) |
 | `USDC_RPC_BASE`, `USDC_RPC_BSC`, `USDC_RPC_XRPL` | optional, override the public RPC endpoints |
 

@@ -16,7 +16,7 @@ async function signed(fields: [string, string][]): Promise<string> {
   return toFormBody([...fields, ["hash", await paynowHash(fields, KEY)]]);
 }
 
-function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknown[]; clock?: { t: Date } } = {}) {
+function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknown[]; clock?: { t: Date }; testEmail?: string } = {}) {
   const clock = opts.clock ?? { t: T0 };
   const now = () => clock.t;
   const sql = sqliteClient();
@@ -44,6 +44,7 @@ function setup(opts: { paynowStatus?: string; logs?: unknown[]; xrplTxs?: unknow
   const service = createPaymentService({
     store, payments: createPaymentStore(sql, now), now, siteUrl: "https://r1vle.test",
     paynow: paynowClient({ integrationId: "1201", integrationKey: KEY }, fakeFetch),
+    paynowTestEmail: opts.testEmail ?? null,
     wallets: WALLETS, rpc: { base: "https://rpc.base.test", bsc: "https://rpc.bsc.test", xrpl: "https://rpc.xrpl.test" }, fetcher: fakeFetch,
   });
   return { store, service, sent, clock };
@@ -54,7 +55,7 @@ const placeOrder = (store: ReturnType<typeof createSqlStore>) =>
 
 describe("payment service", () => {
   test("reports what is available", () => {
-    expect(setup().service.available()).toEqual({ paynow: true, usdc: ["base", "bsc", "xrpl"] });
+    expect(setup().service.available()).toEqual({ paynow: true, paynowTest: false, usdc: ["base", "bsc", "xrpl"] });
   });
 
   test("EcoCash: pushes to the client's phone with the invoice amount and a signed request", async () => {
@@ -174,5 +175,13 @@ describe("payment service", () => {
     logs.push({ address: USDC_CHAINS.base.token, topics: [T, "0x" + "0".repeat(64), topic], data: "0x" + BigInt(pb.payAmount!.replace(".", "")).toString(16), transactionHash: "0xsame" });
     expect((await service.refresh(a.trackingCode, pa.id)).status).toBe("paid");
     expect((await service.refresh(b.trackingCode, pb.id)).status).toBe("pending");
+  });
+
+  test("Paynow test mode sends the merchant's email instead of the client's", async () => {
+    const { store, service, sent } = setup({ testEmail: "merchant@example.com" });
+    expect(service.available().paynowTest).toBe(true);
+    const order = await placeOrder(store);
+    await service.start(order.trackingCode, { kind: "deposit", method: "paynow", channel: "ecocash", phone: "0771111111" });
+    expect(Object.fromEntries(parseForm(sent[0].body)).authemail).toBe("merchant@example.com");
   });
 });

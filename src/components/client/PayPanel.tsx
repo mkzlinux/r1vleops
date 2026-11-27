@@ -140,6 +140,9 @@ export function PayPanel({ order, onPaid, resumePaymentId }: { order: Order; onP
           <div className="pp-chips" role="radiogroup" aria-label="Pay with">
             {PAYNOW_CHANNELS.map((c) => <button key={c.id} type="button" role="radio" aria-checked={channel === c.id} className={channel === c.id ? "on" : ""} onClick={() => setChannel(c.id)}>{c.label}</button>)}
           </div>
+          {options.paynowTest && (
+            <p className="pp-test"><b>Test mode</b> · no real money moves. Test numbers: 0771111111 succeeds, 0772222222 succeeds after a delay, 0773333333 is cancelled, 0774444444 has insufficient funds.</p>
+          )}
           {needsPhone ? (
             <div className="field"><label htmlFor="pp-phone">Phone number to charge</label><input id="pp-phone" className="input" type="tel" inputMode="tel" autoComplete="tel" placeholder="0771 234 567" value={phone} onChange={(e) => setPhone(e.target.value)} required /></div>
           ) : <p className="pp-note">You&apos;ll continue on Paynow&apos;s secure page to pay by card or another option.</p>}

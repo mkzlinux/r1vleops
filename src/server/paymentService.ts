@@ -24,6 +24,8 @@ export interface PaymentServiceDeps {
   readonly now?: () => Date;
   readonly siteUrl: string;
   readonly paynow: PaynowClient | null;
+  /** Paynow test mode: requests use the merchant's own email (Paynow requires it) and the UI says "test". */
+  readonly paynowTestEmail?: string | null;
   readonly wallets: Partial<Record<UsdcChain, string>>;
   readonly rpc: Record<UsdcChain, string>;
   readonly fetcher?: typeof fetch;
@@ -88,7 +90,7 @@ export function createPaymentService(deps: PaymentServiceDeps) {
   };
 
   return {
-    available: () => ({ paynow: !!deps.paynow, usdc: usdcChains }),
+    available: () => ({ paynow: !!deps.paynow, paynowTest: !!deps.paynow && !!deps.paynowTestEmail, usdc: usdcChains }),
 
     async start(code: string, input: StartPayment): Promise<StartedPayment> {
       const order = await orderFor(code);
@@ -103,7 +105,7 @@ export function createPaymentService(deps: PaymentServiceDeps) {
         const p = await payments.create({ orderId: order.id, kind: input.kind, method: "paynow", channel: input.channel, amountUsd });
         try {
           const started = await deps.paynow.initiate({
-            reference: p.id, amountUsd, email: order.client.email, info: `${order.invoiceNo}-${input.kind}`, channel: input.channel, phone: phone ?? undefined,
+            reference: p.id, amountUsd, email: deps.paynowTestEmail || order.client.email, info: `${order.invoiceNo}-${input.kind}`, channel: input.channel, phone: phone ?? undefined,
             resultUrl: `${deps.siteUrl}/api/paynow/result`, returnUrl: `${deps.siteUrl}/invoice/${order.trackingCode}?payment=${p.id}`,
           });
           await payments.setPollUrl(p.id, started.pollUrl);

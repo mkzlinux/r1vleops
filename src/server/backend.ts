@@ -101,6 +101,7 @@ function paymentServiceFor(store: SqlStore): PaymentService {
     store,
     siteUrl: (process.env.SITE_URL || "https://r1vleops.vercel.app").replace(/\/$/, ""),
     paynow: id && key ? paynowClient({ integrationId: id, integrationKey: key }) : null,
+    paynowTestEmail: process.env.PAYNOW_MODE === "test" ? process.env.PAYNOW_TEST_EMAIL?.trim() || null : null,
     wallets: { base: wallet("USDC_WALLET_BASE", EVM_ADDRESS), bsc: wallet("USDC_WALLET_BSC", EVM_ADDRESS), xrpl: wallet("USDC_WALLET_XRPL", XRPL_ADDRESS) },
     rpc: { base: process.env.USDC_RPC_BASE || DEFAULT_RPC.base, bsc: process.env.USDC_RPC_BSC || DEFAULT_RPC.bsc, xrpl: process.env.USDC_RPC_XRPL || DEFAULT_RPC.xrpl },
   });

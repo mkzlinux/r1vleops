@@ -161,3 +161,4 @@
 @media (prefers-reduced-motion: reduce) { .pp-wait i { animation: none; } }
 .pp-link { justify-self: start; background: none; border: 0; color: var(--signal); font: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 4px 0; }
 .pay-panel .error-box .pp-link { color: inherit; }
+.pp-test { background: rgba(255, 193, 7, 0.14); border: 1px dashed rgba(255, 193, 7, 0.6); border-radius: 14px; padding: 10px 14px; color: #fff !important; font-size: 13px !important; }
