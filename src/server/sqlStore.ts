@@ -4,7 +4,7 @@ import { SEED_WORKERS } from "@/lib/data/seed";
 import { MAX_FILES, attachmentKey, validateFiles } from "@/lib/files";
 import { clientKey } from "@/lib/opsStats";
 import { advanceOrder as applyAdvance, buildOrder, isValidTrackingCode, normalizeTrackingCode, validateNewOrder, type OrderAdvance } from "@/lib/orders";
-import type { Attachment, NewOrderInput, NewWorkerInput, Order, ProjectUpdate, Service, Worker } from "@/lib/types";
+import type { Attachment, NewOrderInput, NewWorkerInput, Order, OrderLine, ProjectUpdate, Service, Worker } from "@/lib/types";
 import { paymentsFor } from "./paymentStore";
 import type { SqlClient, SqlValue } from "./sql";
 
@@ -129,14 +129,16 @@ export function createSqlStore(sql: SqlClient, deps: { now?: () => Date; blobs: 
       return { ...svc, priceUsd };
     },
 
-    async createOrder(input: NewOrderInput): Promise<Order> {
+    /** `extraLines` (e.g. a negotiated discount) are appended after server-side pricing. */
+    async createOrder(input: NewOrderInput, extraLines: readonly OrderLine[] = []): Promise<Order> {
       const errors = validateNewOrder(input);
       if (errors.length > 0) throw new StoreError(errors.join(" "));
       const services = await listServices();
       const year = now().getFullYear();
       for (let attempt = 0; attempt < 4; attempt += 1) {
         const existing = await sql.query<{ invoice_no: string }>("SELECT invoice_no FROM orders WHERE invoice_no LIKE ?", [`R1VLE-INV-${year}-%`]);
-        const order = buildOrder(input, { services, existingInvoiceNos: existing.map((r) => r.invoice_no), now: now(), random: Math.random });
+        const built = buildOrder(input, { services, existingInvoiceNos: existing.map((r) => r.invoice_no), now: now(), random: Math.random });
+        const order = extraLines.length > 0 ? { ...built, lines: [...built.lines, ...extraLines] } : built;
         try {
           await sql.query(
             "INSERT INTO orders (id, tracking_code, invoice_no, created_at, department_id, client, brief, lines, deposit_pct, stage, progress, assigned_worker_id, region, attachments, client_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, '[]', ?)",

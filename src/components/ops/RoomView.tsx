@@ -42,7 +42,7 @@ function OrderRow({ order, isOpen, onOpen }: { order: Order; isOpen: boolean; on
 export function RoomView({ room }: { room: RoomId }) {
   const router = useRouter();
   const params = useSearchParams();
-  const { orders, workers, services, error, run } = useOpsData();
+  const { orders, workers, services, quotes, error, run } = useOpsData();
   const meta = ROOM_META[room];
   const isHq = room === "hq";
   const [tab, setTab] = useState<Tab>(isHq ? "team" : "requests");
@@ -78,7 +78,7 @@ export function RoomView({ room }: { room: RoomId }) {
     items.length === 0 ? <p className="g-empty">{empty}</p> : items.map((o) => <OrderRow key={o.id} order={o} isOpen={o.id === openId} onOpen={() => setOpenId(o.id)} />);
 
   return (
-    <OpsFrame active={room} alerts={summarize(orders).requests}>
+    <OpsFrame active={room} alerts={summarize(orders).requests + quotes.filter((q) => q.status === "open").length}>
       <div className={`room-grid${openOrder ? " with-drawer" : ""}`}>
         <section className="room-main">
           <OpsSky accent={meta.accent} strikeTarget={{ x: 0.82, y: 0.35 }} className="room-hero">

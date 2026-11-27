@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
-import { bucketWhatsappMessage } from "@/lib/bucket";
 import { COMPANY } from "@/lib/catalog";
-import { waLink } from "@/lib/config";
 import { readClientMemory, rememberClient } from "@/lib/clientMemory";
 import { getRepository } from "@/lib/data";
 import { MAX_FILES, formatBytes, validateFiles } from "@/lib/files";
 import { formatUsd, validateNewOrder } from "@/lib/orders";
 import type { Client } from "@/lib/types";
 import { useBucket } from "../bucket/BucketProvider";
-import { ArrowUpRight, BucketIcon, Close, Upload, WhatsApp } from "../Icons";
+import { ArrowUpRight, BucketIcon, Close, Upload } from "../Icons";
 
 const EMPTY_CLIENT: Client = { name: "", company: "", email: "", whatsapp: "" };
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.svg,.heic,.pdf,.ai,.eps,.psd,.fig,.zip,.txt,.doc,.docx,.ppt,.pptx";
@@ -164,9 +162,7 @@ export function OrderForm() {
         ))}
         <div className="dep"><small>Due now to start · {COMPANY.depositPct}% deposit</small><div className="big">{formatUsd(priced.deposit)}</div><small>Balance {formatUsd(priced.balance)} on delivery</small></div>
         <div><small>Total</small><div className="big total">{formatUsd(priced.total)}</div></div>
-        <a className="btn btn-outline-signal" href={waLink(bucketWhatsappMessage(bucket, services, region))} target="_blank" rel="noopener noreferrer" style={{ justifyContent: "center" }}>
-          <WhatsApp size={18} /> Negotiate this price
-        </a>
+        <p className="sum-note">Want a different price? <Link href="/pricing">Negotiate from your bucket</Link> before checking out.</p>
         {errors.length > 0 && <div className="error-box" role="alert">{errors.map((x) => <div key={x}>{x}</div>)}</div>}
         {region === "zw" && errors.some((x) => x.includes("+263")) && (
           <button type="button" className="btn btn-outline-signal" style={{ justifyContent: "center" }} onClick={() => { setRegion("intl"); setErrors([]); }}>Use international prices</button>

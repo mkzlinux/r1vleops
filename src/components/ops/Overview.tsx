@@ -62,7 +62,8 @@ function Timeline({ days, markerRef }: { days: readonly DayActivity[]; markerRef
 }
 
 export function Overview() {
-  const { orders, workers, isLoading, error } = useOpsData();
+  const { orders, workers, quotes, isLoading, error } = useOpsData();
+  const openDeals = quotes.filter((q) => q.status === "open");
   const now = useMemo(() => new Date(), []);
   const fc = forecast(orders, now);
   const days = dailyActivity(orders, now, 7);
@@ -86,7 +87,7 @@ export function Overview() {
   const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <OpsFrame active="overview" alerts={total.requests}>
+    <OpsFrame active="overview" alerts={total.requests + openDeals.length}>
       <div className="ops-head">
         <div>
           <span className="eyebrow" suppressHydrationWarning>{greeting} · {now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</span>
@@ -127,6 +128,15 @@ export function Overview() {
               </Link>
             );
           })}
+          <Link href="/ops/deals" className="o-card dept dc-deals">
+            <span className="o-ico"><Coin size={16} /></span>
+            <div className="o-grow">
+              <b>Deals</b>
+              <small>{openDeals.length > 0 ? `${openDeals.length} negotiation${openDeals.length === 1 ? "" : "s"} waiting` : "No open negotiations"}</small>
+            </div>
+            <div className="o-num">{openDeals.length}</div>
+            <span className="o-go"><ArrowUpRight size={16} /></span>
+          </Link>
         </aside>
       </div>
 

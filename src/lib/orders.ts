@@ -60,7 +60,7 @@ export interface OrderTotals {
   readonly balance: number;
 }
 
-const roundCents = (n: number): number => Math.round(n * 100) / 100;
+export const roundCents = (n: number): number => Math.round(n * 100) / 100;
 
 export function linesTotal(lines: readonly OrderLine[]): number {
   return roundCents(lines.reduce((sum, l) => sum + l.qty * l.rateUsd, 0));

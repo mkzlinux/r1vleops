@@ -3,17 +3,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { isCloudflareBackend, isSupabaseConfigured } from "@/lib/data";
-import { Chip, Film, Plus, Shield, Users } from "../Icons";
+import { Chip, Coin, Film, Plus, Shield, Users } from "../Icons";
 import { Brand } from "../site/SiteChrome";
 import { OpsBackground } from "./OpsBackground";
 
-export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "hq";
+export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq";
 
 const NAV: readonly { id: OpsNavId; href: string; label: string; icon: ReactNode }[] = [
   { id: "overview", href: "/ops", label: "Overview", icon: <GridIcon /> },
   { id: "security", href: "/ops/security", label: "Security", icon: <Shield size={18} /> },
   { id: "intelligence", href: "/ops/intelligence", label: "Intelligence", icon: <Chip size={18} /> },
   { id: "creative", href: "/ops/creative", label: "Creative Studio", icon: <Film size={18} /> },
+  { id: "deals", href: "/ops/deals", label: "Deals", icon: <Coin size={18} /> },
   { id: "hq", href: "/ops/hq", label: "Team & HQ", icon: <Users size={18} /> },
 ];
 

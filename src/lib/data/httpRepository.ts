@@ -1,4 +1,5 @@
 import type { OrderAdvance } from "../orders";
+import type { Quote } from "../quotes";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 
@@ -57,6 +58,11 @@ export function createHttpRepository(fetcher: Fetch = (...args) => fetch(...args
     },
 
     findOrderByCode: (code) => call<Order | null>(`/api/track/${encodeURIComponent(code.trim())}`),
+    createQuote: (request) => call<Quote>("/api/quotes", { method: "POST", body: request }),
+    findQuote: (code) => call<Quote | null>(`/api/quotes/${encodeURIComponent(code.trim())}`),
+    checkoutQuote: (code) => call<Order>(`/api/quotes/${encodeURIComponent(code.trim())}/checkout`, { method: "POST", body: {} }),
+    listQuotes: () => call<Quote[]>("/api/ops/quotes"),
+    respondToQuote: (id, response) => call<Quote>(`/api/ops/quotes/${encodeURIComponent(id)}`, { method: "PATCH", body: response }),
     findClientOrders: (email, code) => call<Order[]>("/api/clients/orders", { method: "POST", body: { email, code } }),
     listOrders: () => call<Order[]>("/api/ops/orders"),
     advanceOrder: (orderId, change: OrderAdvance) => call<Order>(`/api/ops/orders/${encodeURIComponent(orderId)}`, { method: "PATCH", body: { action: "advance", ...change } }),

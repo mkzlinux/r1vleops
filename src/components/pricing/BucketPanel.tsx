@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { bucketWhatsappMessage } from "@/lib/bucket";
 import { COMPANY, PAYMENT_METHODS, maxQtyFor } from "@/lib/catalog";
-import { waLink } from "@/lib/config";
 import { formatUsd } from "@/lib/orders";
 import { useBucket } from "../bucket/BucketProvider";
-import { ArrowUpRight, BucketIcon, Close, Minus, Plus, Trash, WhatsApp } from "../Icons";
+import { ArrowUpRight, BucketIcon, Close, Minus, Plus, Trash } from "../Icons";
+import { NegotiateForm } from "./NegotiateForm";
 
 function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
-  const { bucket, services, priced, region, setQty, remove, clear } = useBucket();
+  const { priced, region, setQty, remove, clear } = useBucket();
+  const [isNegotiating, setIsNegotiating] = useState(false);
   if (priced.lines.length === 0) {
     return (
       <div className="bucket-empty">
@@ -50,12 +50,14 @@ function BucketContents({ onNavigate }: { onNavigate?: () => void }) {
         <small>Total{region === "zw" ? " · Zimbabwe" : ""}</small>
         <strong>{formatUsd(priced.total)}</strong>
       </div>
-      <a className="btn btn-outline-signal negotiate" href={waLink(bucketWhatsappMessage(bucket, services, region))} target="_blank" rel="noopener noreferrer">
-        <WhatsApp size={18} /> Negotiate this price
-      </a>
-      <Link href="/order" className="btn btn-lime checkout" onClick={onNavigate}>
+      {isNegotiating ? <NegotiateForm onCancel={() => setIsNegotiating(false)} onNavigate={onNavigate} /> : (
+        <button type="button" className="btn btn-outline-signal negotiate" onClick={() => setIsNegotiating(true)}>
+          Negotiate this price
+        </button>
+      )}
+      {!isNegotiating && <Link href="/order" className="btn btn-lime checkout" onClick={onNavigate}>
         <span>Checkout · get invoice</span><span className="arrow"><ArrowUpRight size={16} /></span>
-      </Link>
+      </Link>}
       <div className="pay-soon" aria-label="Payment methods">
         {PAYMENT_METHODS.filter((m) => m.status === "live").map((m) => <span key={m.id}>{m.label}</span>)}
         <em>pay online after checkout</em>

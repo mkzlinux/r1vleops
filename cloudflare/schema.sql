@@ -88,3 +88,25 @@ CREATE TABLE IF NOT EXISTS clients (
   last_order_at TEXT NOT NULL,
   order_count INTEGER NOT NULL DEFAULT 0
 );
+
+-- Negotiation tickets (quotes): proposed budget -> accept / counter / decline -> checkout.
+CREATE TABLE IF NOT EXISTS quotes (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL,
+  client TEXT NOT NULL,
+  client_email TEXT NOT NULL,
+  region TEXT NOT NULL CHECK (region IN ('zw', 'intl')),
+  items TEXT NOT NULL,
+  lines TEXT NOT NULL,
+  list_total REAL NOT NULL,
+  proposed_total REAL NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'countered', 'accepted', 'declined', 'converted')),
+  offer_total REAL,
+  reply TEXT NOT NULL DEFAULT '',
+  responded_at TEXT,
+  valid_until TEXT,
+  order_code TEXT
+);
+CREATE INDEX IF NOT EXISTS quotes_status ON quotes(status, created_at);

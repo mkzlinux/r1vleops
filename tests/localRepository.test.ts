@@ -96,3 +96,16 @@ describe("client history (local)", () => {
     expect(await repo.findClientOrders("other@mail.com", a.trackingCode)).toHaveLength(0);
   });
 });
+
+describe("negotiation tickets (local demo)", () => {
+  test("counter offer checks out at the agreed price", async () => {
+    const { createLocalRepository, memoryStore, memoryBlobStore } = await import("@/lib/data/localRepository");
+    const { orderTotals } = await import("@/lib/orders");
+    const repo = createLocalRepository(memoryStore(), () => new Date("2026-11-28T10:00:00Z"), memoryBlobStore());
+    const q = await repo.createQuote({ client, items: [{ serviceId: "cre-logo", qty: 1 }], region: "intl", proposedTotal: 150, note: "" });
+    await repo.respondToQuote(q.id, { action: "counter", amount: 200, message: "" });
+    const order = await repo.checkoutQuote(q.code);
+    expect(orderTotals(order).total).toBe(200);
+    expect((await repo.findQuote(q.code))?.status).toBe("converted");
+  });
+});

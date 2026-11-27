@@ -2,6 +2,7 @@ import { DEPARTMENTS } from "@/lib/catalog";
 import type { OrderAdvance } from "@/lib/orders";
 import { STAGES, type DepartmentId, type NewOrderInput, type NewWorkerInput, type Region, type Stage } from "@/lib/types";
 import { PAYNOW_CHANNELS, USDC_CHAIN_IDS, type PaymentKind, type PaynowChannel, type UsdcChain } from "@/lib/payments";
+import type { QuoteRequest, QuoteResponse } from "@/lib/quotes";
 import type { StartPayment } from "./paymentService";
 import { StoreError, type FileMeta } from "./sqlStore";
 
@@ -58,4 +59,19 @@ export function parseStartPayment(body: unknown): StartPayment {
   if (b.method === "paynow") return { kind, method: "paynow", channel: oneOf(b.channel, PAYNOW_IDS, "payment option"), phone: optStr(b.phone, "phone number", 30) };
   if (b.method === "usdc") return { kind, method: "usdc", channel: oneOf<UsdcChain>(b.channel, USDC_CHAIN_IDS, "USDC network") };
   return fail("payment method");
+}
+
+export function parseQuoteRequest(body: unknown): QuoteRequest {
+  const b = obj(body, "request");
+  const base = parseNewOrder({ client: b.client, brief: "", items: b.items, region: b.region });
+  return { client: base.client, items: base.items, region: base.region, proposedTotal: num(b.proposedTotal, "budget"), note: optStr(b.note, "note", 2000) };
+}
+
+export function parseQuoteResponse(body: unknown): QuoteResponse {
+  const b = obj(body, "response");
+  const message = optStr(b.message, "message", 2000);
+  if (b.action === "accept") return { action: "accept", message };
+  if (b.action === "decline") return { action: "decline", message };
+  if (b.action === "counter") return { action: "counter", amount: num(b.amount, "amount"), message };
+  return fail("action");
 }

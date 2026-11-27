@@ -1,5 +1,6 @@
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
 import type { OrderAdvance } from "../orders";
+import type { Quote, QuoteRequest, QuoteResponse } from "../quotes";
 
 /**
  * Storage boundary for the whole app. Pages depend only on this interface;
@@ -21,5 +22,12 @@ export interface R1vleRepository {
   advanceOrder(orderId: string, change: OrderAdvance): Promise<Order>;
   assignWorker(orderId: string, workerId: string | null): Promise<Order>;
   listWorkers(): Promise<Worker[]>;
+  /** Negotiation tickets: client proposes a budget; operator accepts, counters or declines. */
+  createQuote(request: QuoteRequest): Promise<Quote>;
+  findQuote(code: string): Promise<Quote | null>;
+  /** Client takes the agreed price: creates the order (idempotent). */
+  checkoutQuote(code: string): Promise<Order>;
+  listQuotes(): Promise<Quote[]>;
+  respondToQuote(id: string, response: QuoteResponse): Promise<Quote>;
   hireWorker(input: NewWorkerInput): Promise<Worker>;
 }

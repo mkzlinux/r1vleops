@@ -61,6 +61,25 @@ Security: prices are always recomputed on the server; public tracking hides cont
 brief; public endpoints are rate limited per IP in D1; `/ops` APIs need an httpOnly, SameSite=strict,
 HMAC-signed session cookie and same-origin requests.
 
+## Negotiation tickets
+
+The **Negotiate** button lives only in the bucket (before checkout). The client enters a budget and a
+note; a ticket (`R1Q-XXXX-XXXX`) opens at `/quote/<code>` and in `/ops/deals`. You accept, counter or
+decline; offers stay valid 14 days. The client taps "Accept & get invoice" and the order is created at
+the agreed price (a "Negotiated price" discount line against current prices). From the deal drawer,
+send the client their link on WhatsApp or email.
+
+## Background payment checks
+
+A Cloudflare scheduled Worker (`cloudflare/payment-sweeper/worker.js`, cron every 2 minutes) calls
+`/api/cron/payments`, which re-checks every pending Paynow/USDC payment, so payments confirm even if
+the client closed the page. The endpoint is globally rate limited and only re-runs normal verification.
+
+## Prices
+
+International prices are market rates; every service also has a Zimbabwe price (`regional.zw` in
+`src/lib/catalog.ts`). Price edits in `/ops` change the international (list) price.
+
 ## Clients (no accounts)
 
 Clients are filed by **email** (trimmed, lowercased): the `clients` table in D1 and `orders.client_email`.

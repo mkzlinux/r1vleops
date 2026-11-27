@@ -18,7 +18,7 @@ export default function PricingPage() {
             <h1>Build your <span className="accent mark">bucket.</span></h1>
           </div>
           <div>
-            <p>Pick packages or single pieces, change quantities, then check out for an instant invoice, or negotiate the total with us on WhatsApp.</p>
+            <p>Pick packages or single pieces, change quantities, then check out for an instant invoice, or open a negotiation ticket with your budget.</p>
             <div className="steps-mini"><span><b>01</b>Add</span><span><b>02</b>Negotiate or check out</span><span><b>03</b>Pay 50%, we start</span></div>
           </div>
         </section>

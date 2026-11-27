@@ -144,7 +144,7 @@
 .pp-chips button.on { border-color: var(--signal); background: rgba(200, 245, 59, 0.12); }
 .pp-chips button:focus-visible, .pp-tabs button:focus-visible, .pp-copy button:focus-visible, .pp-link:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 .pay-panel .field label { color: rgba(255, 255, 255, 0.7); }
-.pay-panel .input { background: rgba(255, 255, 255, 0.95); }
+.pay-panel .input { background: #fff; color: var(--ink); }
 .pay-panel .btn { justify-self: start; }
 .pp-copy { display: grid; gap: 6px; }
 .pp-copy small { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
@@ -191,3 +191,31 @@
 .co-card footer small { color: var(--mute); font-size: 12px; }
 .co-card .btn-plain { padding: 9px 14px; font-size: 13px; }
 .linklike { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; text-decoration-color: var(--signal-2); text-underline-offset: 3px; cursor: pointer; }
+.summary .sum-note { margin: 0; font-size: 12.5px; color: #8f8f8c; } .summary .sum-note a { color: var(--signal); text-decoration: underline; }
+
+/* ---------- Negotiation ticket page ---------- */
+.qv { padding-bottom: 80px; }
+.qv-new { display: inline-block; margin: 0 0 14px; padding: 8px 14px; border-radius: var(--pill); background: var(--signal); font-weight: 600; font-size: 14px; }
+.qv-status { display: inline-block; margin-top: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 11px; border-radius: var(--pill); background: #fff; border: 1px solid var(--rule); }
+.qv-status.countered, .qv-status.accepted { background: var(--signal); border-color: transparent; }
+.qv-status.converted { background: var(--ink); color: #fff; }
+.qv-status.declined, .qv-status.expired { background: rgba(224, 64, 58, 0.12); color: #9b231d; border-color: transparent; }
+.qv-title { max-width: 16ch; }
+.qv-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.qv-deal { display: grid; gap: 16px; }
+.qv-prices { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.qv-prices div { padding: 14px 16px; border-radius: 18px; background: var(--paper); }
+.qv-prices small { display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); font-weight: 700; }
+.qv-prices b { font-size: 26px; letter-spacing: -0.03em; }
+.qv-prices b.struck { text-decoration: line-through; text-decoration-color: var(--red); color: var(--mute); }
+.qv-prices .offer { background: var(--ink); color: #fff; }
+.qv-prices .offer small { color: rgba(255, 255, 255, 0.6); }
+.qv-prices .offer b { color: var(--signal); font-size: 32px; }
+.qv-reply { margin: 0; padding: 16px 18px; border-radius: 18px; border-left: 4px solid var(--signal); background: var(--paper); font-size: 15px; white-space: pre-wrap; }
+.qv-reply cite { display: block; margin-top: 8px; font-style: normal; font-size: 12px; color: var(--mute); }
+.qv-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.qv-items ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+.qv-items li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--rule); font-size: 14px; }
+.qv-note { margin: 14px 0 0; color: var(--mute); font-style: italic; font-size: 14px; }
+@media (max-width: 860px) { .qv-grid { grid-template-columns: 1fr; } }
+.qv-items .label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); margin: 0; }

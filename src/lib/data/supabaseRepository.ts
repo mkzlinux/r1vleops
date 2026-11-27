@@ -90,6 +90,11 @@ export function createSupabaseRepository(db: SupabaseClient): R1vleRepository {
       const { data, error } = await db.storage.from(FILES_BUCKET).createSignedUrl(attachment.key, 600);
       return error || !data ? null : data.signedUrl;
     },
+    async createQuote(): Promise<never> { throw new Error("Negotiation tickets need the Cloudflare backend."); },
+    async findQuote() { return null; },
+    async checkoutQuote(): Promise<never> { throw new Error("Negotiation tickets need the Cloudflare backend."); },
+    async listQuotes() { return []; },
+    async respondToQuote(): Promise<never> { throw new Error("Negotiation tickets need the Cloudflare backend."); },
     async findClientOrders() {
       throw new Error("Order history is available on the Cloudflare backend.");
     },

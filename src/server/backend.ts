@@ -8,6 +8,7 @@ import { d1HttpClient, type SqlClient } from "./sql";
 import { EVM_CHAIN_IDS, USDC_CHAINS, USDC_CHAIN_IDS, type UsdcChain } from "@/lib/payments";
 import { createPaymentService, type PaymentService } from "./paymentService";
 import { paynowClient } from "./paynow";
+import { createQuoteStore, type QuoteStore } from "./quoteStore";
 import { StoreError, createSqlStore, type SqlStore } from "./sqlStore";
 
 /** Required server env for the Cloudflare backend. Values never reach the browser. */
@@ -24,7 +25,7 @@ export class HttpError extends Error {
   constructor(readonly status: number, message: string) { super(message); }
 }
 
-interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService }
+interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService; quotes: QuoteStore }
 let backend: Promise<Backend> | null = null;
 
 export function getBackend(): Promise<Backend> {
@@ -34,7 +35,7 @@ export function getBackend(): Promise<Backend> {
     const sql = d1HttpClient({ accountId, databaseId: env("CLOUDFLARE_D1_DATABASE_ID"), apiToken, apiBase: process.env.CLOUDFLARE_API_BASE });
     const r2 = r2Client({ accountId, bucket: process.env.R2_BUCKET || "r1vleops-order-files", accessKeyId: env("CLOUDFLARE_API_TOKEN_ID"), secretAccessKey: await r2SecretFromToken(apiToken) });
     const store = createSqlStore(sql, { blobs: r2.blobs });
-    return { sql, r2, store, payments: paymentServiceFor(store) };
+    return { sql, r2, store, payments: paymentServiceFor(store), quotes: createQuoteStore(sql, store) };
   })().catch((err: unknown) => { backend = null; throw err; });
   return backend;
 }

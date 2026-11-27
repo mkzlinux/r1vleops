@@ -3,7 +3,9 @@ import { advanceOrder, buildOrder, isValidTrackingCode, normalizeTrackingCode, v
 import type { OrderAdvance } from "../orders";
 import { attachmentKey, validateFiles } from "../files";
 import { clientKey } from "../opsStats";
-import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
+import { priceBucket } from "../bucket";
+import { buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type Quote, type QuoteRequest, type QuoteResponse } from "../quotes";
+import type { Attachment, NewOrderInput, NewWorkerInput, Order, OrderLine, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 import { SEED_WORKERS, seedOrders } from "./seed";
 
@@ -18,6 +20,7 @@ interface LocalState {
   readonly priceOverrides: Readonly<Record<string, number>>;
   readonly orders: readonly Order[];
   readonly workers: readonly Worker[];
+  readonly quotes?: readonly Quote[];
 }
 
 const STATE_KEY = "r1vle-ops-state-v1";
@@ -81,7 +84,51 @@ export function createLocalRepository(
     return updated;
   };
 
+  const placeOrder = (input: NewOrderInput, extraLines: readonly OrderLine[]): Order => {
+    const errors = validateNewOrder(input);
+    if (errors.length > 0) throw new Error(errors.join(" "));
+    const state = read();
+    const built = buildOrder(input, { services: services(state), existingInvoiceNos: state.orders.map((o) => o.invoiceNo), now: now(), random: Math.random });
+    const order = extraLines.length > 0 ? { ...built, lines: [...built.lines, ...extraLines] } : built;
+    write({ ...state, orders: [order, ...state.orders] });
+    return order;
+  };
+
+  const saveQuote = (q: Quote): Quote => {
+    const state = read();
+    const others = (state.quotes ?? []).filter((x) => x.id !== q.id);
+    write({ ...state, quotes: [q, ...others] });
+    return q;
+  };
+  const quoteByCode = (code: string): Quote | null =>
+    isValidQuoteCode(code) ? (read().quotes ?? []).find((q) => q.code === normalizeTrackingCode(code)) ?? null : null;
+
   return {
+    async createQuote(request: QuoteRequest) {
+      return saveQuote(buildQuote(request, { services: services(read()), now: now(), random: Math.random }));
+    },
+    async findQuote(code: string) {
+      return quoteByCode(code);
+    },
+    async listQuotes() {
+      return [...(read().quotes ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    async respondToQuote(id: string, response: QuoteResponse) {
+      const q = (read().quotes ?? []).find((x) => x.id === id);
+      if (!q) throw new Error("Ticket not found.");
+      return saveQuote(respondToQuote(q, response, now()));
+    },
+    async checkoutQuote(code: string) {
+      const q = quoteByCode(code);
+      if (!q) throw new Error("Ticket not found.");
+      const existing = q.orderCode ? read().orders.find((o) => o.trackingCode === q.orderCode) : undefined;
+      if (existing) return existing;
+      if (!canCheckoutQuote(q, now())) throw new Error(q.status === "open" ? "We haven't replied to this ticket yet." : "This offer is no longer available. Please open a new ticket.");
+      const extra = discountLine(q, priceBucket(q.items, services(read()), q.region).total);
+      const order = placeOrder({ client: q.client, brief: q.note ? `Negotiated (${q.code}): ${q.note}` : `Negotiated (${q.code})`, items: q.items, region: q.region }, extra ? [extra] : []);
+      saveQuote({ ...q, status: "converted", orderCode: order.trackingCode });
+      return order;
+    },
     mode: "local",
     async listServices() {
       return services(read());
@@ -95,17 +142,7 @@ export function createLocalRepository(
       return { ...svc, priceUsd };
     },
     async createOrder(input: NewOrderInput) {
-      const errors = validateNewOrder(input);
-      if (errors.length > 0) throw new Error(errors.join(" "));
-      const state = read();
-      const order = buildOrder(input, {
-        services: services(state),
-        existingInvoiceNos: state.orders.map((o) => o.invoiceNo),
-        now: now(),
-        random: Math.random,
-      });
-      write({ ...state, orders: [order, ...state.orders] });
-      return order;
+      return placeOrder(input, []);
     },
     async attachFiles(order: Order, files: readonly File[]) {
       if (files.length === 0) return order;
