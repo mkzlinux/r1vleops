@@ -1,11 +1,10 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { waLink } from "@/lib/config";
 import { ArrowUpRight, Chip, Coin, Film, Pen, Play, Shield } from "../Icons";
 
-const HeroVisual = dynamic(() => import("./HeroVisual"), { ssr: false, loading: () => null });
+import { HeroArt } from "./HeroArt";
 
 const FEATURES = [
   { icon: <Shield />, title: "Security", text: "Pentests, audits and monitoring." },
@@ -54,7 +53,7 @@ export function Hero() {
             <path d="M90 470 C 190 470, 250 380, 300 300" />
             <path d="M520 500 C 430 480, 360 400, 300 300" />
           </svg>
-          <div className="hero-canvas"><HeroVisual /></div>
+          <div className="hero-canvas"><HeroArt /></div>
           <div className="float-card fc-1"><span className="fc-ico"><Shield size={16} /></span><div><b>Pentest report</b><small>Delivered in 14 days</small></div></div>
           <div className="float-card fc-2"><span className="fc-ico lime"><Chip size={16} /></span><div><b>AI agent live</b><small>Answering on WhatsApp</small></div></div>
           <div className="float-card fc-3"><span className="fc-ico violet"><Pen size={16} /></span><div><b>12 flyers · 3 posters</b><small>Creative Studio this week</small></div></div>

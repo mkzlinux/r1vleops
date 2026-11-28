@@ -17,6 +17,10 @@
 
 .hero-stage { position: relative; height: clamp(380px, 46vw, 640px); }
 .hero-canvas { position: absolute; inset: 8% 10%; }
+.hero-3d { position: absolute; inset: 0; }
+.hero-still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; animation: drift 9s ease-in-out infinite; transition: opacity 0.6s var(--ease); }
+.hero-still.is-hidden { opacity: 0; animation: none; }
+@keyframes drift { 50% { transform: translateY(-8px) rotate(-1.5deg); } }
 .halo { position: absolute; inset: 4% 6%; border-radius: 50%; border: 1px solid rgba(14, 15, 17, 0.08); pointer-events: none; }
 .halo.two { inset: 15% 17%; border-style: dashed; animation: spin 90s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -43,7 +47,8 @@
   .fc-1 { top: 4%; } .fc-2 { top: auto; bottom: 26%; right: 0; } .fc-3 { display: none; } .fc-4 { bottom: 2%; }
 }
 @media (max-width: 520px) { .float-card { font-size: 12px; padding: 8px 10px 8px 8px; } .float-card small { display: none; } .hero-stage { height: 330px; } }
-@media (prefers-reduced-motion: reduce) { .float-card, .halo.two { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .float-card, .halo.two, .hero-still { animation: none; } }
+
 
 /* Feature strip (Loman) */
 .strip { margin-top: clamp(16px, 3vw, 32px); background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--glass-line); border-radius: var(--radius); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); box-shadow: var(--shadow); }
@@ -178,3 +183,10 @@
 .track-form input { flex: 1; min-width: 0; border: 0; outline: none; padding: 0 16px; font-family: var(--font-mono); font-size: 16px; text-transform: uppercase; letter-spacing: 0.08em; background: transparent; color: var(--ink); }
 @media (max-width: 760px) { .track-card { grid-template-columns: 1fr; } .track-form .btn span.label { display: none; } }
 
+/* Phones and tablets: live backdrop blur over moving content is the costliest thing a mobile GPU can do. */
+@media (hover: none), (max-width: 960px) {
+  .float-card { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(255, 255, 255, 0.94); animation: none; }
+  .strip, .glass-dark { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .strip { background: rgba(255, 255, 255, 0.9); }
+  .halo.two { animation: none; }
+}

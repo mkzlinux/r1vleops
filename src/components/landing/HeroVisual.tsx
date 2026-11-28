@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Environment, Float, Lightformer, MeshTransmissionMaterial, RoundedBox } from "@react-three/drei";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 const PAGE_BG = new THREE.Color("#f3f3ef");
@@ -39,7 +39,7 @@ function Portal({ still }: { still: boolean }) {
     <group ref={group} rotation={[0.1, -0.5, 0]}>
       <mesh geometry={geometry}>
         <MeshTransmissionMaterial
-          samples={6} resolution={512} thickness={0.6} roughness={0.08} transmission={1} ior={1.35}
+          samples={4} resolution={256} thickness={0.6} roughness={0.08} transmission={1} ior={1.35}
           chromaticAberration={0.06} anisotropy={0.2} distortion={0.15} distortionScale={0.3} temporalDistortion={0.05}
           color="#ffffff" background={PAGE_BG} backside
         />
@@ -53,10 +53,22 @@ function Portal({ still }: { still: boolean }) {
   );
 }
 
-export default function HeroVisual() {
+/** Desktop-only live portal. Stops rendering entirely while scrolled out of view. */
+export default function HeroVisual({ onReady }: { onReady?: () => void }) {
   const still = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const box = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting), { rootMargin: "100px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <Canvas camera={{ position: [0, 0, 6.4], fov: 38 }} dpr={[1, 1.8]} gl={{ antialias: true, alpha: true }} frameloop={still ? "demand" : "always"}>
+    <div ref={box} className="hero-3d">
+    <Canvas camera={{ position: [0, 0, 6.4], fov: 38 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      frameloop={still || !isVisible ? "never" : "always"} onCreated={() => requestAnimationFrame(() => requestAnimationFrame(() => onReady?.()))}>
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 4, 5]} intensity={1.6} />
       <Portal still={still} />
@@ -67,5 +79,6 @@ export default function HeroVisual() {
         <Lightformer form="ring" intensity={4} color="#ffffff" position={[0, 0, 6]} scale={3} />
       </Environment>
     </Canvas>
+    </div>
   );
 }
