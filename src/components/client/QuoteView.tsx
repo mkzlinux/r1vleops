@@ -13,7 +13,7 @@ const REFRESH_MS = 30_000;
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 const HEADLINES: Record<Quote["status"], string> = {
-  open: "We're reviewing your offer.",
+  open: "We're reviewing your request.",
   countered: "We've made you an offer.",
   accepted: "Your price is approved.",
   declined: "We couldn't do that price.",
@@ -66,8 +66,8 @@ export function QuoteView({ code, isNew }: { code: string; isNew: boolean }) {
       <div className="qv-grid">
         <section className="panel qv-deal" aria-label="Offer">
           <div className="qv-prices">
-            <div><small>List price</small><b className={quote.offerTotal !== null ? "struck" : ""}>{formatUsd(quote.listTotal)}</b></div>
-            <div><small>Your budget</small><b>{formatUsd(quote.proposedTotal)}</b></div>
+            {quote.kind !== "custom" && <div><small>List price</small><b className={quote.offerTotal !== null ? "struck" : ""}>{formatUsd(quote.listTotal)}</b></div>}
+            <div><small>Your budget</small><b>{quote.proposedTotal > 0 ? formatUsd(quote.proposedTotal) : "Open"}</b></div>
             {quote.offerTotal !== null && <div className="offer"><small>{quote.status === "countered" ? "Our offer" : "Agreed price"}</small><b>{formatUsd(quote.offerTotal)}</b></div>}
           </div>
           {quote.reply && <blockquote className="qv-reply">{quote.reply}<cite>R1VLE{quote.respondedAt ? ` · ${fmtDate(quote.respondedAt)}` : ""}</cite></blockquote>}
@@ -83,9 +83,19 @@ export function QuoteView({ code, isNew }: { code: string; isNew: boolean }) {
         </section>
 
         <aside className="panel qv-items" aria-label="Bucket">
-          <p className="label">Ticket <span className="mono">{quote.code}</span> · {fmtDate(quote.createdAt)}</p>
-          <ul>{quote.lines.map((l) => <li key={l.serviceId}><span>{l.qty > 1 ? `${l.qty} × ` : ""}{l.name}</span><b>{formatUsd(l.qty * l.rateUsd)}</b></li>)}</ul>
-          {quote.note && <p className="qv-note">&ldquo;{quote.note}&rdquo;</p>}
+          <p className="label">{quote.kind === "custom" ? "Custom request" : "Ticket"} <span className="mono">{quote.code}</span> · {fmtDate(quote.createdAt)}</p>
+          {quote.kind === "custom" ? (
+            <div className="qv-custom">
+              <h3>{quote.title}</h3>
+              <p>{quote.note}</p>
+              {quote.timeline && <p className="qv-note">Timeline: {quote.timeline}</p>}
+            </div>
+          ) : (
+            <>
+              <ul>{quote.lines.map((l) => <li key={l.serviceId}><span>{l.qty > 1 ? `${l.qty} × ` : ""}{l.name}</span><b>{formatUsd(l.qty * l.rateUsd)}</b></li>)}</ul>
+              {quote.note && <p className="qv-note">&ldquo;{quote.note}&rdquo;</p>}
+            </>
+          )}
         </aside>
       </div>
     </div>

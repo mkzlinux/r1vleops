@@ -139,3 +139,8 @@
 .nego-cancel { color: rgba(255, 255, 255, 0.75); background: transparent; }
 @media (max-width: 420px) { .nego-grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .nego { animation: none; } }
+
+/* Custom request call-to-action */
+.pricing-custom { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 28px 0 8px; padding: 22px 24px; border-radius: 26px; background: var(--ink); color: #fff; }
+.pricing-custom b { font-size: 20px; letter-spacing: -0.02em; }
+.pricing-custom p { margin: 4px 0 0; color: rgba(255, 255, 255, 0.65); font-size: 14px; }

@@ -1,6 +1,6 @@
 import { priceBucket } from "./bucket";
 import { normalizeTrackingCode, roundCents } from "./orders";
-import type { Client, OrderItem, OrderLine, Region, Service } from "./types";
+import type { Client, DepartmentId, OrderItem, OrderLine, Region, Service } from "./types";
 
 /**
  * Negotiation tickets ("quotes"): a client proposes a budget for their bucket before checkout,
@@ -18,6 +18,12 @@ export interface QuoteRequest {
 }
 
 export interface Quote {
+  /** "bucket": negotiated catalogue items. "custom": something not on the price list. */
+  readonly kind?: "bucket" | "custom";
+  /** Custom requests: short title, department and timeline (description is in `note`). */
+  readonly title?: string;
+  readonly departmentId?: DepartmentId;
+  readonly timeline?: string;
   readonly id: string;
   readonly code: string;
   readonly createdAt: string;
@@ -94,9 +100,12 @@ export function respondToQuote(q: Quote, r: QuoteResponse, now: Date): Quote {
   const validUntil = new Date(now.getTime() + QUOTE_VALID_DAYS * 86_400_000).toISOString();
   const base = { ...q, reply: r.message.trim().slice(0, 2000), respondedAt: now.toISOString() };
   if (r.action === "decline") return { ...base, status: "declined", offerTotal: null, validUntil: null };
-  if (r.action === "accept") return { ...base, status: "accepted", offerTotal: q.proposedTotal, validUntil };
+  if (r.action === "accept") {
+    if (q.proposedTotal <= 0) throw new Error("No budget was given: send a counter-offer with your price instead.");
+    return { ...base, status: "accepted", offerTotal: q.proposedTotal, validUntil };
+  }
   if (!Number.isFinite(r.amount) || r.amount <= 0) throw new Error("Enter a counter-offer amount.");
-  if (r.amount >= q.listTotal) throw new Error("A counter-offer should be below the list price.");
+  if (q.kind !== "custom" && r.amount >= q.listTotal) throw new Error("A counter-offer should be below the list price.");
   return { ...base, status: "countered", offerTotal: roundCents(r.amount), validUntil };
 }
 
@@ -137,4 +146,58 @@ export function buildOffer(input: OfferInput, terms: { offerTotal: number | null
   if (offer > priced.total) throw new Error("The offer can't be above the list price.");
   const base = buildQuote({ ...input, proposedTotal: Math.min(offer, priced.total - 0.01) }, deps);
   return respondToQuote({ ...base, proposedTotal: roundCents(offer) }, { action: "accept", message: terms.message }, deps.now);
+}
+
+export interface CustomRequest {
+  readonly client: Client;
+  readonly title: string;
+  readonly description: string;
+  readonly departmentId: DepartmentId;
+  /** Client's budget in USD, or null if they'd rather get a quote. */
+  readonly budget: number | null;
+  readonly timeline: string;
+  readonly region: Region;
+}
+
+export function validateCustomRequest(r: CustomRequest): string[] {
+  const errors = validateQuoteRequest({ client: r.client, items: [{ serviceId: "custom", qty: 1 }], region: r.region, proposedTotal: 1, note: r.description }, 0);
+  if (r.title.trim().length < 3 || r.title.length > 120) errors.push("Give your request a short title.");
+  if (r.description.trim().length < 15) errors.push("Describe what you need in a sentence or two.");
+  if (r.budget !== null && (!Number.isFinite(r.budget) || r.budget <= 0 || r.budget > 10_000_000)) errors.push("Enter a budget in USD, or leave it empty.");
+  if (r.timeline.length > 120) errors.push("Keep the timeline short.");
+  return errors;
+}
+
+/** A request for something not on the price list; the operator prices it with a counter-offer. */
+export function buildCustomQuote(r: CustomRequest, deps: { now: Date; random: () => number }): Quote {
+  const errors = validateCustomRequest(r);
+  if (errors.length > 0) throw new Error(errors.join(" "));
+  return {
+    kind: "custom",
+    title: r.title.trim(),
+    departmentId: r.departmentId,
+    timeline: r.timeline.trim(),
+    id: `q_${deps.now.getTime().toString(36)}${Math.floor(deps.random() * 1e6).toString(36)}`,
+    code: generateQuoteCode(deps.random),
+    createdAt: deps.now.toISOString(),
+    client: { name: r.client.name.trim(), company: r.client.company.trim(), email: r.client.email.trim(), whatsapp: r.client.whatsapp.trim() },
+    region: r.region,
+    items: [],
+    lines: [],
+    listTotal: 0,
+    proposedTotal: r.budget === null ? 0 : roundCents(r.budget),
+    note: r.description.trim(),
+    status: "open",
+    offerTotal: null,
+    reply: "",
+    respondedAt: null,
+    validUntil: null,
+    orderCode: null,
+  };
+}
+
+/** The invoice line for an agreed custom request. */
+export function customOrderLine(q: Quote): OrderLine | null {
+  if (q.kind !== "custom" || q.offerTotal === null) return null;
+  return { serviceId: "custom", name: `Custom: ${q.title ?? "Request"}`, qty: 1, rateUsd: q.offerTotal };
 }

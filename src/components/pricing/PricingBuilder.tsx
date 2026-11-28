@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { DEPARTMENTS, maxQtyFor } from "@/lib/catalog";
@@ -7,7 +8,7 @@ import { formatUsd } from "@/lib/orders";
 import { REGIONS, priceNote, unitPrice } from "@/lib/pricing";
 import type { DepartmentId, Region, Service } from "@/lib/types";
 import { useBucket } from "../bucket/BucketProvider";
-import { Check, Chip, Clock, Film, Minus, Plus, Shield } from "../Icons";
+import { ArrowUpRight, Check, Chip, Clock, Film, Minus, Plus, Shield } from "../Icons";
 import { BucketPanel, MobileBucket } from "./BucketPanel";
 
 type Filter = "all" | DepartmentId;
@@ -137,6 +138,10 @@ export function PricingBuilder() {
             </section>
           );
         })}
+        <aside className="pricing-custom" aria-label="Custom request">
+          <div><b>Need something that isn&apos;t listed?</b><p>Describe it. We&apos;ll come back with a price you can accept in one tap.</p></div>
+          <Link href="/request" className="btn btn-lime"><span>Request anything</span><span className="arrow"><ArrowUpRight size={16} /></span></Link>
+        </aside>
       </div>
       <BucketPanel />
       <MobileBucket />

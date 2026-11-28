@@ -135,3 +135,14 @@ describe("advanceOrder", () => {
 test("stageLabel is human readable", () => {
   expect(stageLabel("awaiting_deposit")).toBe("Awaiting 50% deposit");
 });
+
+describe("orders with custom lines", () => {
+  test("an order can be only custom lines, in the given department", () => {
+    const o = buildOrder({ client, brief: "", items: [], region: "intl", departmentId: "security", customLines: [{ serviceId: "custom", name: "Custom: Red team exercise", qty: 1, rateUsd: 5000 }] },
+      { services: SERVICES, existingInvoiceNos: [], now: new Date("2026-11-28"), random: fixedRandom });
+    expect(o.departmentId).toBe("security");
+    expect(orderTotals(o).total).toBe(5000);
+    expect(validateNewOrder({ client, brief: "", items: [], region: "intl", customLines: [{ serviceId: "custom", name: "x", qty: 1, rateUsd: 1 }] })).toEqual([]);
+    expect(validateNewOrder({ client, brief: "", items: [], region: "intl" }).join()).toMatch(/at least one/i);
+  });
+});

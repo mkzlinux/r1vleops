@@ -126,6 +126,10 @@ export interface NewOrderInput {
   readonly region: Region;
   /** ISO country the order came from (detected from the visitor's IP on the server). */
   readonly country?: string | null;
+  /** Lines not from the catalogue (custom requests), priced by the operator. */
+  readonly customLines?: readonly OrderLine[];
+  /** Department for orders made only of custom lines. */
+  readonly departmentId?: DepartmentId;
 }
 
 export interface NewWorkerInput {

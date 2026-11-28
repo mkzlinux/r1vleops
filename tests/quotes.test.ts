@@ -71,3 +71,39 @@ describe("operator-made offers and invoices", () => {
     expect(() => buildOffer({ client, items: [{ serviceId: "cre-logo", qty: 1 }], region: "intl", note: "" }, { offerTotal: 999, message: "" }, { services: SERVICES, now, random })).toThrow(/list/i);
   });
 });
+
+import { buildCustomQuote, validateCustomRequest } from "@/lib/quotes";
+
+describe("custom requests (things not on the price list)", () => {
+  const req = { client, title: "Drone light show visuals", description: "3D visuals for a 200-drone show at a product launch in Harare.", departmentId: "creative" as const, budget: 1800, timeline: "6 weeks", region: "intl" as const };
+  const now = new Date("2026-11-28T09:00:00Z");
+
+  test("validates title, description and an optional budget", () => {
+    expect(validateCustomRequest(req)).toEqual([]);
+    expect(validateCustomRequest({ ...req, budget: null })).toEqual([]);
+    expect(validateCustomRequest({ ...req, title: "x" }).join()).toMatch(/title/i);
+    expect(validateCustomRequest({ ...req, description: "short" }).join()).toMatch(/describe/i);
+    expect(validateCustomRequest({ ...req, budget: -5 }).join()).toMatch(/budget/i);
+  });
+
+  test("opens as a custom ticket with no list price; any counter-offer is allowed", () => {
+    const q = buildCustomQuote(req, { now, random });
+    expect(q).toMatchObject({ kind: "custom", title: "Drone light show visuals", departmentId: "creative", listTotal: 0, proposedTotal: 1800, status: "open", lines: [] });
+    expect(isValidQuoteCode(q.code)).toBe(true);
+    expect(respondToQuote(q, { action: "counter", amount: 2400, message: "Includes 3 revisions" }, now)).toMatchObject({ status: "countered", offerTotal: 2400 });
+    expect(respondToQuote(q, { action: "accept", message: "" }, now).offerTotal).toBe(1800);
+  });
+
+  test("with no budget, accepting needs a price: counter instead", () => {
+    const q = buildCustomQuote({ ...req, budget: null }, { now, random });
+    expect(q.proposedTotal).toBe(0);
+    expect(() => respondToQuote(q, { action: "accept", message: "" }, now)).toThrow(/counter/i);
+  });
+
+  test("checks out as a single custom line at the agreed price", () => {
+    const q = respondToQuote(buildCustomQuote(req, { now, random }), { action: "counter", amount: 2400, message: "" }, now);
+    expect(customOrderLine(q)).toEqual({ serviceId: "custom", name: "Custom: Drone light show visuals", qty: 1, rateUsd: 2400 });
+  });
+});
+
+import { customOrderLine } from "@/lib/quotes";

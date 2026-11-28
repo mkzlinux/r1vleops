@@ -4,7 +4,7 @@ import type { OrderAdvance } from "../orders";
 import { attachmentKey, validateFiles } from "../files";
 import { clientKey } from "../opsStats";
 import { priceBucket } from "../bucket";
-import { adjustmentLine, buildOffer, buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type OfferInput, type Quote, type QuoteRequest, type QuoteResponse } from "../quotes";
+import { adjustmentLine, buildCustomQuote, buildOffer, buildQuote, canCheckoutQuote, customOrderLine, discountLine, type CustomRequest, isValidQuoteCode, respondToQuote, type OfferInput, type Quote, type QuoteRequest, type QuoteResponse } from "../quotes";
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, OrderLine, Service, Worker } from "../types";
 import type { R1vleRepository } from "./repository";
 import { SEED_WORKERS, seedOrders } from "./seed";
@@ -114,6 +114,9 @@ export function createLocalRepository(
     async createOffer(input: OfferInput, terms: { offerTotal: number | null; message: string }) {
       return saveQuote(buildOffer(input, terms, { services: services(read()), now: now(), random: Math.random }));
     },
+    async createCustomRequest(request: CustomRequest) {
+      return saveQuote(buildCustomQuote(request, { now: now(), random: Math.random }));
+    },
     async createQuote(request: QuoteRequest) {
       return saveQuote(buildQuote(request, { services: services(read()), now: now(), random: Math.random }));
     },
@@ -134,8 +137,11 @@ export function createLocalRepository(
       const existing = q.orderCode ? read().orders.find((o) => o.trackingCode === q.orderCode) : undefined;
       if (existing) return existing;
       if (!canCheckoutQuote(q, now())) throw new Error(q.status === "open" ? "We haven't replied to this ticket yet." : "This offer is no longer available. Please open a new ticket.");
-      const extra = discountLine(q, priceBucket(q.items, services(read()), q.region).total);
-      const order = placeOrder({ client: q.client, brief: q.note ? `Negotiated (${q.code}): ${q.note}` : `Negotiated (${q.code})`, items: q.items, region: q.region }, extra ? [extra] : []);
+      const custom = customOrderLine(q);
+      const extra = custom ? null : discountLine(q, priceBucket(q.items, services(read()), q.region).total);
+      const order = custom
+        ? placeOrder({ client: q.client, brief: `Custom request (${q.code}): ${q.note}`, items: [], region: q.region, customLines: [custom], departmentId: q.departmentId }, [])
+        : placeOrder({ client: q.client, brief: q.note ? `Negotiated (${q.code}): ${q.note}` : `Negotiated (${q.code})`, items: q.items, region: q.region }, extra ? [extra] : []);
       saveQuote({ ...q, status: "converted", orderCode: order.trackingCode });
       return order;
     },

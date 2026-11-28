@@ -1,8 +1,8 @@
 import { priceBucket } from "@/lib/bucket";
 import { clientKey } from "@/lib/opsStats";
 import { normalizeTrackingCode } from "@/lib/orders";
-import { buildOffer, buildQuote, canCheckoutQuote, discountLine, isValidQuoteCode, respondToQuote, type OfferInput, type Quote, type QuoteRequest, type QuoteResponse, type QuoteStatus } from "@/lib/quotes";
-import type { Order, Region } from "@/lib/types";
+import { buildCustomQuote, buildOffer, buildQuote, canCheckoutQuote, customOrderLine, discountLine, type CustomRequest, isValidQuoteCode, respondToQuote, type OfferInput, type Quote, type QuoteRequest, type QuoteResponse, type QuoteStatus } from "@/lib/quotes";
+import type { DepartmentId, Order, Region } from "@/lib/types";
 import type { SqlClient } from "./sql";
 import { StoreError, type SqlStore } from "./sqlStore";
 
@@ -10,12 +10,14 @@ interface QuoteRow {
   id: string; code: string; created_at: string; client: string; client_email: string; region: Region; items: string; lines: string;
   list_total: number; proposed_total: number; note: string; status: QuoteStatus; offer_total: number | null; reply: string;
   responded_at: string | null; valid_until: string | null; order_code: string | null;
+  kind?: "bucket" | "custom" | null; title?: string | null; department_id?: DepartmentId | null; timeline?: string | null;
 }
 
 const toQuote = (r: QuoteRow): Quote => ({
   id: r.id, code: r.code, createdAt: r.created_at, client: JSON.parse(r.client), region: r.region, items: JSON.parse(r.items), lines: JSON.parse(r.lines),
   listTotal: Number(r.list_total), proposedTotal: Number(r.proposed_total), note: r.note, status: r.status,
   offerTotal: r.offer_total === null ? null : Number(r.offer_total), reply: r.reply, respondedAt: r.responded_at, validUntil: r.valid_until, orderCode: r.order_code,
+  kind: r.kind ?? "bucket", title: r.title ?? undefined, departmentId: r.department_id ?? undefined, timeline: r.timeline ?? undefined,
 });
 
 /** What the public quote page may show: no contact details beyond the client's name. */
@@ -30,8 +32,8 @@ export function createQuoteStore(sql: SqlClient, orders: SqlStore, now: () => Da
 
   const insert = async (q: Quote): Promise<void> => {
     await sql.query(
-      "INSERT INTO quotes (id, code, created_at, client, client_email, region, items, lines, list_total, proposed_total, note, status, offer_total, reply, responded_at, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [q.id, q.code, q.createdAt, JSON.stringify(q.client), clientKey(q.client.email), q.region, JSON.stringify(q.items), JSON.stringify(q.lines), q.listTotal, q.proposedTotal, q.note, q.status, q.offerTotal, q.reply, q.respondedAt, q.validUntil],
+      "INSERT INTO quotes (id, code, created_at, client, client_email, region, items, lines, list_total, proposed_total, note, status, offer_total, reply, responded_at, valid_until, kind, title, department_id, timeline) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [q.id, q.code, q.createdAt, JSON.stringify(q.client), clientKey(q.client.email), q.region, JSON.stringify(q.items), JSON.stringify(q.lines), q.listTotal, q.proposedTotal, q.note, q.status, q.offerTotal, q.reply, q.respondedAt, q.validUntil, q.kind ?? "bucket", q.title ?? null, q.departmentId ?? null, q.timeline ?? null],
     );
   };
 
@@ -50,6 +52,14 @@ export function createQuoteStore(sql: SqlClient, orders: SqlStore, now: () => Da
       } catch (err: unknown) {
         throw new StoreError(err instanceof Error ? err.message : "Invalid request.");
       }
+      await insert(q);
+      return q;
+    },
+
+    /** A request for something not on the price list. */
+    async createCustom(request: CustomRequest): Promise<Quote> {
+      let q: Quote;
+      try { q = buildCustomQuote(request, { now: now(), random: Math.random }); } catch (err: unknown) { throw new StoreError(err instanceof Error ? err.message : "Invalid request."); }
       await insert(q);
       return q;
     },
@@ -88,9 +98,15 @@ export function createQuoteStore(sql: SqlClient, orders: SqlStore, now: () => Da
         if (existing) return existing;
       }
       if (!canCheckoutQuote(q, now())) throw new StoreError(q.status === "open" ? "We haven't replied to this ticket yet." : "This offer is no longer available. Please open a new ticket.");
-      const listNow = priceBucket(q.items, await orders.listServices(), q.region).total;
-      const extra = discountLine(q, listNow);
-      const order = await orders.createOrder({ client: q.client, brief: q.note ? `Negotiated (${q.code}): ${q.note}` : `Negotiated (${q.code})`, items: q.items, region: q.region }, extra ? [extra] : []);
+      let order: Order;
+      const custom = customOrderLine(q);
+      if (custom) {
+        order = await orders.createOrder({ client: q.client, brief: `Custom request (${q.code}): ${q.note}${q.timeline ? `\nTimeline: ${q.timeline}` : ""}`, items: [], region: q.region, customLines: [custom], departmentId: q.departmentId });
+      } else {
+        const listNow = priceBucket(q.items, await orders.listServices(), q.region).total;
+        const extra = discountLine(q, listNow);
+        order = await orders.createOrder({ client: q.client, brief: q.note ? `Negotiated (${q.code}): ${q.note}` : `Negotiated (${q.code})`, items: q.items, region: q.region }, extra ? [extra] : []);
+      }
       await save({ ...q, status: "converted", orderCode: order.trackingCode });
       return order;
     },

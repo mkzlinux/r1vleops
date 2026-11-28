@@ -46,7 +46,7 @@ describe("robots.txt and sitemap.xml", () => {
     expect(rules.disallow).toEqual(expect.arrayContaining(["/ops", "/api/", "/invoice/", "/quote/", "/orders", "/track"]));
     expect(r.sitemap).toMatch(/sitemap\.xml$/);
     const urls = sitemap().map((e) => new URL(e.url).pathname);
-    expect(urls).toEqual(["/", "/pricing"]);
+    expect(urls).toEqual(["/", "/pricing", "/request"]);
   });
 });
 

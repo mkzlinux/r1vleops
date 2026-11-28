@@ -56,3 +56,17 @@ describe("operator dashboard drafts", () => {
     expect(orderTotals(fromOffer).total).toBe(200);
   });
 });
+
+describe("custom requests (D1)", () => {
+  test("client asks for something unlisted, operator prices it, client checks out", async () => {
+    const { quotes } = setup();
+    const q = await quotes.createCustom({ client, title: "Drone show visuals", description: "3D visuals for a 200-drone launch show.", departmentId: "creative", budget: null, timeline: "6 weeks", region: "intl" });
+    expect((await quotes.findByCode(q.code))).toMatchObject({ kind: "custom", title: "Drone show visuals", timeline: "6 weeks" });
+    await expect(quotes.respond(q.id, { action: "accept", message: "" })).rejects.toThrow(/counter/i);
+    await quotes.respond(q.id, { action: "counter", amount: 2430, message: "Includes 3 revisions" });
+    const order = await quotes.checkout(q.code);
+    expect(order.departmentId).toBe("creative");
+    expect(order.lines).toEqual([{ serviceId: "custom", name: "Custom: Drone show visuals", qty: 1, rateUsd: 2430 }]);
+    expect(orderTotals(order).deposit).toBe(1215);
+  });
+});

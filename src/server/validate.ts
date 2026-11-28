@@ -2,7 +2,7 @@ import { DEPARTMENTS } from "@/lib/catalog";
 import type { OrderAdvance } from "@/lib/orders";
 import { STAGES, type DepartmentId, type NewOrderInput, type NewWorkerInput, type Region, type Stage } from "@/lib/types";
 import { PAYNOW_CHANNELS, USDC_CHAIN_IDS, type PaymentKind, type PaynowChannel, type UsdcChain } from "@/lib/payments";
-import type { QuoteRequest, QuoteResponse } from "@/lib/quotes";
+import type { CustomRequest, QuoteRequest, QuoteResponse } from "@/lib/quotes";
 import type { StartPayment } from "./paymentService";
 import { StoreError, type FileMeta } from "./sqlStore";
 
@@ -82,4 +82,18 @@ export function parseOperatorDraft(body: unknown): { input: NewOrderInput; agree
   const input = parseNewOrder({ client: b.client, brief: b.brief ?? "", items: b.items, region: b.region });
   const agreedTotal = b.agreedTotal === null || b.agreedTotal === undefined || b.agreedTotal === "" ? null : num(b.agreedTotal, "agreed total");
   return { input, agreedTotal, message: optStr(b.message, "message", 2000) };
+}
+
+export function parseCustomRequest(body: unknown): Omit<CustomRequest, "region"> {
+  const b = obj(body, "request");
+  const c = obj(b.client, "client details");
+  const budget = b.budget === null || b.budget === undefined || b.budget === "" ? null : num(b.budget, "budget");
+  return {
+    client: { name: str(c.name, "name", 120), company: optStr(c.company, "company", 160), email: str(c.email, "email", 200), whatsapp: str(c.whatsapp, "WhatsApp number", 40) },
+    title: str(b.title, "title", 120),
+    description: str(b.description, "description", 4000),
+    departmentId: oneOf(b.departmentId, DEPT_IDS, "department"),
+    budget,
+    timeline: optStr(b.timeline, "timeline", 120),
+  };
 }

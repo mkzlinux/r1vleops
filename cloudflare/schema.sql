@@ -108,7 +108,11 @@ CREATE TABLE IF NOT EXISTS quotes (
   reply TEXT NOT NULL DEFAULT '',
   responded_at TEXT,
   valid_until TEXT,
-  order_code TEXT
+  order_code TEXT,
+  kind TEXT NOT NULL DEFAULT 'bucket',
+  title TEXT,
+  department_id TEXT,
+  timeline TEXT
 );
 CREATE INDEX IF NOT EXISTS quotes_status ON quotes(status, created_at);
 

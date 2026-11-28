@@ -1,6 +1,6 @@
 import type { Attachment, NewOrderInput, NewWorkerInput, Order, Service, Worker } from "../types";
 import type { OrderAdvance } from "../orders";
-import type { OfferInput, Quote, QuoteRequest, QuoteResponse } from "../quotes";
+import type { CustomRequest, OfferInput, Quote, QuoteRequest, QuoteResponse } from "../quotes";
 
 /**
  * Storage boundary for the whole app. Pages depend only on this interface;
@@ -24,6 +24,8 @@ export interface R1vleRepository {
   listWorkers(): Promise<Worker[]>;
   /** Negotiation tickets: client proposes a budget; operator accepts, counters or declines. */
   createQuote(request: QuoteRequest): Promise<Quote>;
+  /** A request for something not on the price list (priced by the operator). */
+  createCustomRequest(request: CustomRequest): Promise<Quote>;
   findQuote(code: string): Promise<Quote | null>;
   /** Client takes the agreed price: creates the order (idempotent). */
   checkoutQuote(code: string): Promise<Order>;

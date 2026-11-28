@@ -11,7 +11,8 @@ import { useOpsData } from "./useOpsData";
 type Tab = "open" | "offers" | "won" | "declined";
 const TAB_OF = (q: Quote): Tab =>
   q.status === "open" ? "open" : q.status === "converted" ? "won" : q.status === "declined" ? "declined" : "offers";
-const pct = (q: Quote) => Math.round((1 - q.proposedTotal / q.listTotal) * 100);
+const pct = (q: Quote) => (q.listTotal > 0 ? Math.round((1 - q.proposedTotal / q.listTotal) * 100) : 0);
+const isCustom = (q: Quote) => q.kind === "custom";
 const fmt = (n: number) => formatUsd(n).replace(".00", "");
 
 function quoteUrl(code: string): string {
@@ -19,8 +20,8 @@ function quoteUrl(code: string): string {
 }
 
 function DealDrawer({ quote, onClose, onRespond }: { quote: Quote; onClose: () => void; onRespond: (r: QuoteResponse) => Promise<string | null> }) {
-  const midpoint = Math.round((quote.proposedTotal + quote.listTotal) / 2);
-  const [amount, setAmount] = useState(String(quote.offerTotal ?? midpoint));
+  const midpoint = isCustom(quote) ? (quote.proposedTotal > 0 ? quote.proposedTotal : 0) : Math.round((quote.proposedTotal + quote.listTotal) / 2);
+  const [amount, setAmount] = useState(quote.offerTotal !== null ? String(quote.offerTotal) : midpoint > 0 ? String(midpoint) : "");
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -45,28 +46,29 @@ function DealDrawer({ quote, onClose, onRespond }: { quote: Quote; onClose: () =
       </header>
       <h2>{quote.client.company || quote.client.name}</h2>
       <p className="dim">{quote.client.name} · <span className="mono">{quote.code}</span> · {new Date(quote.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p>
+      {isCustom(quote) && <div className="dr-brief"><b>Custom: {quote.title}</b>{quote.timeline ? ` · ${quote.timeline}` : ""}</div>}
       <div className="dr-kpis">
-        <div><b>{fmt(quote.listTotal)}</b><small>List</small></div>
-        <div><b>{fmt(quote.proposedTotal)}</b><small>Their budget · −{pct(quote)}%</small></div>
+        <div><b>{isCustom(quote) ? "Custom" : fmt(quote.listTotal)}</b><small>{isCustom(quote) ? "Not listed" : "List"}</small></div>
+        <div><b>{quote.proposedTotal > 0 ? fmt(quote.proposedTotal) : "Open"}</b><small>Their budget{isCustom(quote) ? "" : ` · −${pct(quote)}%`}</small></div>
         <div><b>{quote.offerTotal !== null ? fmt(quote.offerTotal) : "—"}</b><small>Offer</small></div>
       </div>
-      <div className="dr-files">
+      {!isCustom(quote) && <div className="dr-files">
         <small>Bucket</small>
         {quote.lines.map((l) => <div key={l.serviceId} className="dr-pay"><span>{l.qty > 1 ? `${l.qty} × ` : ""}{l.name}</span><span>{formatUsd(l.qty * l.rateUsd)}</span></div>)}
-      </div>
+      </div>}
       {quote.note && <p className="dr-brief">{quote.note}</p>}
       <p className="dim">{quote.client.email} · {quote.client.whatsapp} · {quote.region === "zw" ? "Zimbabwe prices" : "International prices"}</p>
 
       {canRespond && (
         <div className="g-form">
-          <label className="dr-range">Counter-offer (USD)
+          <label className="dr-range">{isCustom(quote) ? "Your price (USD)" : "Counter-offer (USD)"}
             <input className="g-input" type="number" inputMode="decimal" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} />
           </label>
           <textarea className="g-input" placeholder="Message to the client (shown on their ticket)" value={message} onChange={(e) => setMessage(e.target.value)} />
           {error && <p className="g-error" role="alert">{error}</p>}
           <div className="quick">
-            <button type="button" disabled={isBusy} onClick={() => act({ action: "accept", message })}>Accept {fmt(quote.proposedTotal)}</button>
-            <button type="button" disabled={isBusy} onClick={() => act({ action: "counter", amount: Number(amount), message })}>Counter {amount ? fmt(Number(amount)) : ""}</button>
+            {quote.proposedTotal > 0 && <button type="button" disabled={isBusy} onClick={() => act({ action: "accept", message })}>Accept {fmt(quote.proposedTotal)}</button>}
+            <button type="button" disabled={isBusy || !amount} onClick={() => act({ action: "counter", amount: Number(amount), message })}>{isCustom(quote) ? "Send price" : "Counter"} {amount ? fmt(Number(amount)) : ""}</button>
             <button type="button" disabled={isBusy} onClick={() => act({ action: "decline", message })}>Decline</button>
           </div>
         </div>
@@ -129,8 +131,8 @@ export function DealsView() {
                 return (
                   <button key={q.id} type="button" className={`g-row click${q.id === openId ? " on" : ""}`} onClick={() => setOpenId(q.id)}>
                     <span className={`stage-dot ${q.status === "open" ? "awaiting_deposit" : q.status === "converted" ? "in_progress" : "in_review"}`} />
-                    <div className="g-grow"><b>{q.client.company || q.client.name}</b><small>{q.lines.map((l) => l.name).join(", ")}{expired ? " · offer expired" : ""}</small></div>
-                    <div className="g-row-end"><b>{fmt(q.proposedTotal)} <small style={{ display: "inline" }}>of {fmt(q.listTotal)}</small></b><small>−{pct(q)}%</small></div>
+                    <div className="g-grow"><b>{q.client.company || q.client.name}{isCustom(q) && <span className="cl-badge">Custom</span>}</b><small>{isCustom(q) ? q.title : q.lines.map((l) => l.name).join(", ")}{expired ? " · offer expired" : ""}</small></div>
+                    <div className="g-row-end">{isCustom(q) ? <><b>{q.proposedTotal > 0 ? fmt(q.proposedTotal) : "Open budget"}</b><small>{q.timeline || "No timeline"}</small></> : <><b>{fmt(q.proposedTotal)} <small style={{ display: "inline" }}>of {fmt(q.listTotal)}</small></b><small>−{pct(q)}%</small></>}</div>
                   </button>
                 );
               })}

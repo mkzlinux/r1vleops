@@ -219,3 +219,16 @@
 .qv-note { margin: 14px 0 0; color: var(--mute); font-style: italic; font-size: 14px; }
 @media (max-width: 860px) { .qv-grid { grid-template-columns: 1fr; } }
 .qv-items .label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); margin: 0; }
+
+/* ---------- Custom request ---------- */
+.cr-form { max-width: 860px; display: grid; gap: 16px; padding-bottom: 80px; }
+.cr-depts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+.cr-depts button { text-align: left; border: 1px solid var(--rule); background: var(--paper); border-radius: 18px; padding: 14px; font: inherit; cursor: pointer; display: grid; gap: 4px; transition: border-color 0.2s, background 0.2s; }
+.cr-depts button small { color: var(--mute); font-size: 12.5px; }
+.cr-depts button.on { border-color: var(--ink); background: #fff; box-shadow: inset 0 0 0 1px var(--ink); }
+.cr-depts button:focus-visible { outline: 2px solid var(--signal-2); outline-offset: 2px; }
+.cr-form .field + .field, .cr-form .field + .form-grid { margin-top: 12px; }
+.cr-submit { justify-self: start; }
+.qv-custom h3 { margin: 6px 0 8px; font-size: 20px; letter-spacing: -0.02em; }
+.qv-custom p { margin: 0 0 8px; white-space: pre-wrap; font-size: 14.5px; }
+@media (max-width: 760px) { .cr-depts { grid-template-columns: 1fr; } }

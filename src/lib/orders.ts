@@ -80,7 +80,7 @@ export function validateNewOrder(input: NewOrderInput): string[] {
   if (client.whatsapp.replace(/\D/g, "").length < MIN_PHONE_DIGITS) {
     errors.push("Please enter a WhatsApp number with country code.");
   }
-  if (input.items.length === 0) errors.push("Pick at least one service.");
+  if (input.items.length === 0 && !(input.customLines?.length)) errors.push("Pick at least one service.");
   if (input.items.length > 30) errors.push("Too many different items in one order (30 max).");
   if (input.items.some((i) => !Number.isInteger(i.qty) || i.qty < 1)) errors.push("Every item needs a quantity of at least 1.");
   if (input.brief.length > 4000) errors.push("Project brief is too long (4000 characters max).");
@@ -101,9 +101,10 @@ export function buildOrder(input: NewOrderInput, deps: BuildOrderDeps): Order {
     const qty = Math.min(maxQtyFor(svc), Math.max(1, Math.floor(item.qty)));
     return { svc, qty };
   });
-  if (picked.length === 0) throw new Error("An order needs at least one service.");
+  const custom = input.customLines ?? [];
+  if (picked.length === 0 && custom.length === 0) throw new Error("An order needs at least one service.");
 
-  const lines: OrderLine[] = picked.map(({ svc, qty }) => ({ serviceId: svc.id, name: svc.name, qty, rateUsd: unitPrice(svc, input.region, qty) }));
+  const lines: OrderLine[] = [...picked.map(({ svc, qty }) => ({ serviceId: svc.id, name: svc.name, qty, rateUsd: unitPrice(svc, input.region, qty) })), ...custom];
   const at = deps.now.toISOString();
   const invoiceNo = nextInvoiceNo(deps.existingInvoiceNos, deps.now.getFullYear());
   const firstUpdate: ProjectUpdate = {
@@ -118,7 +119,7 @@ export function buildOrder(input: NewOrderInput, deps: BuildOrderDeps): Order {
     trackingCode: generateTrackingCode(deps.random),
     invoiceNo,
     createdAt: at,
-    departmentId: picked[0].svc.departmentId,
+    departmentId: picked[0]?.svc.departmentId ?? input.departmentId ?? "intelligence",
     client: {
       name: input.client.name.trim(),
       company: input.client.company.trim(),

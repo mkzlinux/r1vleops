@@ -67,7 +67,7 @@ export function SiteNav() {
 
 const STATS = [
   { v: "3", k: "departments under one roof" },
-  { v: "5", k: "AI workers running 24/7" },
+  { v: "1", k: "studio, one point of contact" },
   { v: "50%", k: "deposit to start, balance on delivery" },
 ];
 
