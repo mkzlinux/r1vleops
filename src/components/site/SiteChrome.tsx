@@ -94,7 +94,6 @@ export function SiteFooter() {
             <Link href="/legal/terms">Terms</Link>
             <Link href="/legal/privacy">Privacy</Link>
             <Link href="/legal/nda">NDA</Link>
-            <Link href="/ops">Ops</Link>
           </nav>
         </div>
       </div>
