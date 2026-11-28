@@ -1,0 +1,67 @@
+{
+  "firewallEnabled": true,
+  "rules": [
+    {
+      "name": "Allow payment callbacks and sweeper",
+      "description": "Paynow server-to-server status updates and the Cloudflare payment sweeper must never be challenged.",
+      "active": true,
+      "conditionGroup": [
+        { "conditions": [{ "type": "path", "op": "eq", "value": "/api/paynow/result" }] },
+        { "conditions": [{ "type": "path", "op": "eq", "value": "/api/cron/payments" }] }
+      ],
+      "action": { "mitigate": { "action": "bypass" } }
+    },
+    {
+      "name": "Block exploit probes",
+      "description": "Scanner paths that don't exist here (WordPress, PHP, env files, git, admin panels).",
+      "active": true,
+      "conditionGroup": [
+        { "conditions": [{ "type": "path", "op": "re", "value": "(?i)^/(wp-admin|wp-login|wp-content|wp-includes|xmlrpc|phpmyadmin|pma|adminer|cgi-bin|vendor/phpunit|server-status|actuator|boaform|\\.env|\\.git|\\.aws|\\.ssh|\\.DS_Store|config\\.json|backup)" }] },
+        { "conditions": [{ "type": "path", "op": "re", "value": "(?i)\\.(php|asp|aspx|jsp|cgi|env|ini|sql|bak|old|swp)$" }] }
+      ],
+      "action": { "mitigate": { "action": "deny", "actionDuration": "1h" } }
+    },
+    {
+      "name": "Block attack tools",
+      "description": "Deny well-known scanning and exploitation tools by user agent.",
+      "active": true,
+      "conditionGroup": [
+        { "conditions": [{ "type": "user_agent", "op": "re", "value": "(?i)(sqlmap|nikto|nmap|masscan|zgrab|wpscan|acunetix|nessus|nuclei|dirbuster|gobuster|ffuf|feroxbuster|hydra|metasploit|openvas|w3af|havij|jaeles|zmap)" }] }
+      ],
+      "action": { "mitigate": { "action": "deny", "actionDuration": "1h" } }
+    },
+    {
+      "name": "Rate limit ops login",
+      "description": "Edge limit on operator sign-in (the app enforces its own limit too).",
+      "active": true,
+      "conditionGroup": [
+        { "conditions": [{ "type": "path", "op": "eq", "value": "/api/ops/login" }, { "type": "method", "op": "eq", "value": "POST" }] }
+      ],
+      "action": { "mitigate": { "action": "rate_limit", "rateLimit": { "algo": "fixed_window", "window": 60, "limit": 6, "keys": ["ip"], "action": "deny" }, "actionDuration": "10m" } }
+    },
+    {
+      "name": "Rate limit API",
+      "description": "Per-IP cap on all API calls.",
+      "active": true,
+      "conditionGroup": [{ "conditions": [{ "type": "path", "op": "pre", "value": "/api/" }] }],
+      "action": { "mitigate": { "action": "rate_limit", "rateLimit": { "algo": "fixed_window", "window": 60, "limit": 150, "keys": ["ip"], "action": "deny" }, "actionDuration": "5m" } }
+    }
+  ],
+  "crs": {
+    "sqli": { "active": true, "action": "deny" },
+    "xss": { "active": true, "action": "deny" },
+    "lfi": { "active": true, "action": "deny" },
+    "rfi": { "active": true, "action": "deny" },
+    "rce": { "active": true, "action": "deny" },
+    "sd": { "active": true, "action": "deny" },
+    "php": { "active": true, "action": "deny" },
+    "java": { "active": true, "action": "deny" },
+    "ma": { "active": true, "action": "deny" },
+    "sf": { "active": true, "action": "deny" },
+    "gen": { "active": true, "action": "log" }
+  },
+  "managedRules": {
+    "bot_protection": { "active": true, "action": "challenge" },
+    "ai_bots": { "active": true, "action": "log" }
+  }
+}
