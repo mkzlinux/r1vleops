@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DEPARTMENTS } from "@/lib/catalog";
 import { waLink } from "@/lib/config";
 import type { DepartmentId } from "@/lib/types";
-import { ArrowUpRight, Bot, Chip, Film, Leaf, Shield, Sparkle } from "../Icons";
+import { ArrowUpRight, Chip, Film, Leaf, Shield, Sparkle } from "../Icons";
 
 const CAPABILITIES = [
   "Penetration testing", "Smart contracts", "AI agents", "Flyers & posters", "Fintech rails", "Motion graphics",
@@ -42,12 +42,12 @@ export function AboutBento() {
             <b>50%</b>
             <p>Pay half to start, the balance on delivery. Every order gets an invoice number and a private tracking code.</p>
           </div>
-          <div className="b-card b-lime">
-            <small>AI workforce</small>
-            <b>5</b>
-            <p>SENTINEL, ATLAS, QUANT, MUSE and LEDGER work alongside the founder around the clock.</p>
-            <span className="b-bot"><Bot size={22} /></span>
-          </div>
+          <Link href="/about#products" className="b-card b-lime">
+            <small>Our products</small>
+            <b>02</b>
+            <p>ZiFarmChain for farm-to-market trade, and Fasta for keke hailing. Built in-house.</p>
+            <span className="b-bot"><Leaf size={22} /></span>
+          </Link>
           <div className="b-card b-dark-sm">
             <small>Clients track</small>
             <b>Live</b>

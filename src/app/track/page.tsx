@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import "@/components/site/site.css";
 import "@/components/client/client.css";
 import { ArrowLeft } from "@/components/Icons";
-import { Brand } from "@/components/site/SiteChrome";
+import { SiteNav } from "@/components/site/SiteChrome";
 import { TrackView } from "@/components/client/TrackView";
 import { WhatsAppFab } from "@/components/site/SiteChrome";
 
@@ -17,8 +17,10 @@ function TrackFromUrl() {
 
 export default function TrackPage() {
   return (
+    <>
+    <SiteNav />
     <main className="wrap">
-      <div className="page-top"><Brand /><Link href="/" className="back"><ArrowLeft size={16} /> Home</Link></div>
+      <div className="page-back"><Link href="/" className="back"><ArrowLeft size={16} /> Home</Link></div>
       <span className="eyebrow">Project tracking</span>
       <h1 className="page-title">Where&rsquo;s my project?</h1>
       <p className="page-sub">Enter the tracking code from your invoice to see the live stage, progress and updates.</p>
@@ -27,5 +29,6 @@ export default function TrackPage() {
       </Suspense>
       <WhatsAppFab />
     </main>
+    </>
   );
 }
