@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { COMPANY, PAYMENT_METHODS, PAYMENT_NOTE, departmentById } from "@/lib/catalog";
 import { formatBytes } from "@/lib/files";
-import { waLink } from "@/lib/config";
+import { SITE_URL, waLink } from "@/lib/config";
 import { formatUsd, orderTotals, stageLabel } from "@/lib/orders";
 import type { Order } from "@/lib/types";
 import { isCloudflareBackend } from "@/lib/data";
@@ -104,6 +104,7 @@ export function InvoiceView({ order, isNew, filesFailed = false, onPaid = () => 
             <p style={{ margin: "0 0 4px", fontWeight: 700 }}>{order.depositPct}% on acceptance / {formatUsd(totals.deposit)}</p>
             <p style={{ margin: 0 }}>Balance on delivery / {formatUsd(totals.balance)}</p>
             <p className="sub" style={{ marginTop: 8 }}>Status: {stageLabel(order.stage)}</p>
+            <p className="sub" style={{ marginTop: 4 }}>Subject to our <Link href="/legal/terms">Terms and Conditions</Link> ({SITE_URL.replace(/^https?:\/\//, "")}/legal/terms). Paying this invoice confirms acceptance.</p>
           </div>
           <div>
             <p className="label">04 / Payment</p>

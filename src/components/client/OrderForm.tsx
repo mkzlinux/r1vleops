@@ -11,6 +11,7 @@ import { formatUsd, validateNewOrder } from "@/lib/orders";
 import type { Client } from "@/lib/types";
 import { useBucket } from "../bucket/BucketProvider";
 import { ArrowUpRight, BucketIcon, Close, Upload } from "../Icons";
+import { TERMS_REQUIRED, TermsCheckbox } from "../legal/TermsCheckbox";
 
 const EMPTY_CLIENT: Client = { name: "", company: "", email: "", whatsapp: "" };
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.svg,.heic,.pdf,.ai,.eps,.psd,.fig,.zip,.txt,.doc,.docx,.ppt,.pptx";
@@ -72,6 +73,7 @@ export function OrderForm() {
   const [errors, setErrors] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "placing" | "uploading">("idle");
   const [returningName, setReturningName] = useState<string | null>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   // Returning client on this device: pre-fill their details (records themselves are keyed by email).
   useEffect(() => {
@@ -95,8 +97,8 @@ export function OrderForm() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (honeypot) return;
-    const input = { client, brief, items: bucket, region };
-    const problems = [...validateNewOrder(input), ...validateFiles(files)];
+    const input = { client, brief, items: bucket, region, acceptTerms };
+    const problems = [...validateNewOrder(input), ...validateFiles(files), ...(acceptTerms ? [] : [TERMS_REQUIRED])];
     setErrors(problems);
     if (problems.length > 0) return;
     setStatus("placing");
@@ -163,6 +165,7 @@ export function OrderForm() {
         <div className="dep"><small>Due now to start · {COMPANY.depositPct}% deposit</small><div className="big">{formatUsd(priced.deposit)}</div><small>Balance {formatUsd(priced.balance)} on delivery</small></div>
         <div><small>Total</small><div className="big total">{formatUsd(priced.total)}</div></div>
         <p className="sum-note">Want a different price? <Link href="/pricing">Negotiate from your bucket</Link> before checking out.</p>
+        <TermsCheckbox id="o-terms" checked={acceptTerms} onChange={setAcceptTerms} isDark />
         {errors.length > 0 && <div className="error-box" role="alert">{errors.map((x) => <div key={x}>{x}</div>)}</div>}
         <button className="btn btn-lime" type="submit" disabled={status !== "idle"}>
           <span>{status === "placing" ? "Generating invoice…" : status === "uploading" ? "Uploading files…" : "Place order & get invoice"}</span><span className="arrow"><ArrowUpRight size={16} /></span>

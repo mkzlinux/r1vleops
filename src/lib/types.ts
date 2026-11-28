@@ -130,6 +130,8 @@ export interface NewOrderInput {
   readonly customLines?: readonly OrderLine[];
   /** Department for orders made only of custom lines. */
   readonly departmentId?: DepartmentId;
+  /** Client ticked "I agree to the Terms" (required by the public order API). */
+  readonly acceptTerms?: boolean;
 }
 
 export interface NewWorkerInput {

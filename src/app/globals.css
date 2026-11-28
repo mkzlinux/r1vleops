@@ -123,3 +123,11 @@ textarea.input { min-height: 120px; resize: vertical; }
 .badge-count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--signal); color: var(--ink); font-size: 11px; font-weight: 800; display: inline-grid; place-items: center; }
 @keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.25) rotate(-6deg); } 70% { transform: scale(0.95); } 100% { transform: scale(1); } }
 .bump { animation: bump 0.55s var(--ease); }
+
+/* "I agree to the Terms" box, used on checkout, tickets and signing */
+.terms-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: var(--mute); cursor: pointer; }
+.terms-check input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--signal-2); cursor: pointer; }
+.terms-check a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.terms-check.dark { color: #bdbdba; }
+.terms-check.dark a { color: #fff; }
+.terms-check input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }

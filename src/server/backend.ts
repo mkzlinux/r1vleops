@@ -12,6 +12,7 @@ import { createPaymentService, type PaymentService } from "./paymentService";
 import { createMfaStore, type MfaStore } from "./mfaStore";
 import { paynowClient } from "./paynow";
 import { createQuoteStore, type QuoteStore } from "./quoteStore";
+import { createAgreementStore, type AgreementStore, type SigningContext } from "./agreementStore";
 import { StoreError, createSqlStore, type SqlStore } from "./sqlStore";
 
 /** Required server env for the Cloudflare backend. Values never reach the browser. */
@@ -28,7 +29,7 @@ export class HttpError extends Error {
   constructor(readonly status: number, message: string, readonly extra: Record<string, unknown> = {}) { super(message); }
 }
 
-interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService; quotes: QuoteStore; mfa: MfaStore }
+interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService; quotes: QuoteStore; mfa: MfaStore; agreements: AgreementStore }
 let backend: Promise<Backend> | null = null;
 
 export function getBackend(): Promise<Backend> {
@@ -38,7 +39,7 @@ export function getBackend(): Promise<Backend> {
     const sql = d1HttpClient({ accountId, databaseId: env("CLOUDFLARE_D1_DATABASE_ID"), apiToken, apiBase: process.env.CLOUDFLARE_API_BASE });
     const r2 = r2Client({ accountId, bucket: process.env.R2_BUCKET || "r1vleops-order-files", accessKeyId: env("CLOUDFLARE_API_TOKEN_ID"), secretAccessKey: await r2SecretFromToken(apiToken) });
     const store = createSqlStore(sql, { blobs: r2.blobs });
-    return { sql, r2, store, payments: paymentServiceFor(store), quotes: createQuoteStore(sql, store), mfa: createMfaStore(sql, process.env.OPS_SESSION_SECRET ?? "") };
+    return { sql, r2, store, payments: paymentServiceFor(store), quotes: createQuoteStore(sql, store), mfa: createMfaStore(sql, process.env.OPS_SESSION_SECRET ?? ""), agreements: createAgreementStore(sql) };
   })().catch((err: unknown) => { backend = null; throw err; });
   return backend;
 }
@@ -56,6 +57,24 @@ export async function requestLocation(): Promise<{ country: string | null; regio
 export async function clientIp(): Promise<string> {
   const h = await headers();
   return h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
+/** IP, browser and country of the current request, recorded with a signature. */
+export async function signingContext(): Promise<SigningContext> {
+  const h = await headers();
+  return { ip: await clientIp(), userAgent: h.get("user-agent") ?? "", country: (await requestLocation()).country };
+}
+
+/**
+ * Keeps evidence that the client accepted the Terms. A failure here is logged, not shown:
+ * the order or ticket already exists and the client ticked the box.
+ */
+export async function recordTermsAcceptance(client: { name: string; email: string; company: string }, refCode: string): Promise<void> {
+  try {
+    await (await getBackend()).agreements.acceptTerms(client, refCode, await signingContext());
+  } catch (err: unknown) {
+    console.error("Could not record Terms acceptance for", refCode, err);
+  }
 }
 
 export async function rateLimit(bucket: string, opts: RateLimitOptions): Promise<void> {

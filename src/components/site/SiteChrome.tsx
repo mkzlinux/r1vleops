@@ -91,6 +91,9 @@ export function SiteFooter() {
             <a href={waLink(DEFAULT_WA_MESSAGE)} target="_blank" rel="noopener noreferrer">WhatsApp</a>
             <Link href="/pricing">Pricing</Link>
             <Link href="/track">Track</Link>
+            <Link href="/legal/terms">Terms</Link>
+            <Link href="/legal/privacy">Privacy</Link>
+            <Link href="/legal/nda">NDA</Link>
             <Link href="/ops">Ops</Link>
           </nav>
         </div>

@@ -125,3 +125,25 @@ CREATE TABLE IF NOT EXISTS ops_security (
   recovery TEXT NOT NULL DEFAULT '[]',
   enabled_at TEXT
 );
+
+-- Signed agreements (NDA, Authorization to Test) and Terms acceptances, with the exact wording signed.
+CREATE TABLE IF NOT EXISTS agreements (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL CHECK (kind IN ('nda', 'authorization', 'terms')),
+  version TEXT NOT NULL,
+  doc_hash TEXT NOT NULL,
+  signed_at TEXT NOT NULL,
+  signer TEXT NOT NULL,
+  signer_email TEXT NOT NULL,
+  signature TEXT NOT NULL,
+  fields TEXT NOT NULL DEFAULT '{}',
+  ref_code TEXT,
+  country TEXT,
+  ip TEXT NOT NULL DEFAULT '',
+  user_agent TEXT NOT NULL DEFAULT '',
+  document TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS agreements_signed_at_idx ON agreements (signed_at DESC);
+CREATE INDEX IF NOT EXISTS agreements_email_idx ON agreements (signer_email);
+CREATE INDEX IF NOT EXISTS agreements_ref_idx ON agreements (ref_code);

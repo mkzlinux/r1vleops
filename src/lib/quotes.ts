@@ -15,6 +15,7 @@ export interface QuoteRequest {
   readonly region: Region;
   readonly proposedTotal: number;
   readonly note: string;
+  readonly acceptTerms?: boolean;
 }
 
 export interface Quote {
@@ -157,6 +158,7 @@ export interface CustomRequest {
   readonly budget: number | null;
   readonly timeline: string;
   readonly region: Region;
+  readonly acceptTerms?: boolean;
 }
 
 export function validateCustomRequest(r: CustomRequest): string[] {

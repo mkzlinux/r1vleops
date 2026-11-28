@@ -3,6 +3,7 @@ import type { OrderAdvance } from "@/lib/orders";
 import { STAGES, type DepartmentId, type NewOrderInput, type NewWorkerInput, type Region, type Stage } from "@/lib/types";
 import { PAYNOW_CHANNELS, USDC_CHAIN_IDS, type PaymentKind, type PaynowChannel, type UsdcChain } from "@/lib/payments";
 import type { CustomRequest, QuoteRequest, QuoteResponse } from "@/lib/quotes";
+import { SIGNABLE_KINDS, TECHNIQUE_IDS, type SignRequest, type SignableKind, type TechniqueId } from "@/lib/agreements";
 import type { StartPayment } from "./paymentService";
 import { StoreError, type FileMeta } from "./sqlStore";
 
@@ -96,4 +97,33 @@ export function parseCustomRequest(body: unknown): Omit<CustomRequest, "region">
     budget,
     timeline: optStr(b.timeline, "timeline", 120),
   };
+}
+
+/** NDA / Authorization to Test signing form. Business rules (matching signature, dates) run in the store. */
+export function parseSignRequest(body: unknown): SignRequest {
+  const b = obj(body, "agreement");
+  const s = obj(b.signer, "signer");
+  const kind = oneOf<SignableKind>(b.kind, SIGNABLE_KINDS, "agreement type");
+  const f = b.fields === undefined ? {} : obj(b.fields, "agreement details");
+  const signer = { name: str(s.name, "name", 120), email: str(s.email, "email", 200), company: optStr(s.company, "company", 160), role: optStr(s.role, "role", 120) };
+  const fields = kind === "nda"
+    ? { purpose: optStr(f.purpose, "purpose", 1000) }
+    : {
+      inScope: str(f.inScope, "scope", 4000),
+      outOfScope: optStr(f.outOfScope, "out-of-scope list", 2000),
+      windowStart: str(f.windowStart, "start date", 10),
+      windowEnd: str(f.windowEnd, "end date", 10),
+      techniques: Array.isArray(f.techniques) && f.techniques.length <= TECHNIQUE_IDS.length
+        ? f.techniques.map((t) => oneOf<TechniqueId>(t, TECHNIQUE_IDS, "testing technique"))
+        : fail("testing techniques"),
+      emergencyName: str(f.emergencyName, "emergency contact", 120),
+      emergencyPhone: str(f.emergencyPhone, "emergency phone", 40),
+    };
+  const refCode = b.refCode === undefined || b.refCode === null || b.refCode === "" ? null : str(b.refCode, "order code", 20);
+  return { kind, signer, fields, signature: str(b.signature, "signature", 120), consent: b.consent === true, refCode };
+}
+
+/** Public checkout and ticket forms must send acceptTerms: true. */
+export function requireTermsAccepted(body: unknown): void {
+  if (!body || typeof body !== "object" || (body as Obj).acceptTerms !== true) throw new StoreError("Please accept the Terms and Conditions to continue.");
 }

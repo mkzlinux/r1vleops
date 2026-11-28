@@ -1,6 +1,6 @@
-import { getBackend, rateLimit, readJson, requestLocation, requireSameOrigin, respond } from "@/server/backend";
+import { getBackend, rateLimit, readJson, recordTermsAcceptance, requestLocation, requireSameOrigin, respond } from "@/server/backend";
 import { toPublicQuote } from "@/server/quoteStore";
-import { parseQuoteRequest } from "@/server/validate";
+import { parseQuoteRequest, requireTermsAccepted } from "@/server/validate";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,12 @@ export function POST(req: Request) {
   return respond(async () => {
     await requireSameOrigin();
     await rateLimit("quote", { limit: 6, windowMs: 60 * 60 * 1000 });
+    const body = await readJson(req);
+    requireTermsAccepted(body);
     const { region } = await requestLocation();
-    return toPublicQuote(await (await getBackend()).quotes.create({ ...parseQuoteRequest(await readJson(req)), region }));
+    const request = { ...parseQuoteRequest(body), region };
+    const quote = await (await getBackend()).quotes.create(request);
+    await recordTermsAcceptance(request.client, quote.code);
+    return toPublicQuote(quote);
   }, 201);
 }

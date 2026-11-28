@@ -7,7 +7,7 @@ import { Chip, Coin, Film, Plus, Shield, Users } from "../Icons";
 import { Brand } from "../site/SiteChrome";
 import { OpsBackground } from "./OpsBackground";
 
-export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq" | "new" | "settings";
+export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq" | "agreements" | "new" | "settings";
 
 const NAV: readonly { id: OpsNavId; href: string; label: string; icon: ReactNode }[] = [
   { id: "overview", href: "/ops", label: "Overview", icon: <GridIcon /> },
@@ -15,11 +15,16 @@ const NAV: readonly { id: OpsNavId; href: string; label: string; icon: ReactNode
   { id: "intelligence", href: "/ops/intelligence", label: "Intelligence", icon: <Chip size={18} /> },
   { id: "creative", href: "/ops/creative", label: "Creative Studio", icon: <Film size={18} /> },
   { id: "deals", href: "/ops/deals", label: "Deals", icon: <Coin size={18} /> },
+  { id: "agreements", href: "/ops/agreements", label: "Agreements", icon: <DocIcon /> },
   { id: "hq", href: "/ops/hq", label: "Team & HQ", icon: <Users size={18} /> },
 ];
 
 function GridIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" /></svg>;
+}
+
+function DocIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5M10 13h6M10 17h4" /></svg>;
 }
 
 function BellIcon() {

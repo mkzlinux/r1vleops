@@ -9,6 +9,7 @@ import { validateQuoteRequest } from "@/lib/quotes";
 import type { Client } from "@/lib/types";
 import { useBucket } from "../bucket/BucketProvider";
 import { ArrowUpRight } from "../Icons";
+import { TERMS_REQUIRED, TermsCheckbox } from "../legal/TermsCheckbox";
 
 const EMPTY: Client = { name: "", company: "", email: "", whatsapp: "" };
 
@@ -21,14 +22,15 @@ export function NegotiateForm({ onCancel, onNavigate }: { onCancel: () => void; 
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [isBusy, setIsBusy] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   useEffect(() => { const c = readClientMemory().client; if (c) setClient(c); }, []);
 
   const set = (k: keyof Client) => (v: string) => setClient((c) => ({ ...c, [k]: v }));
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const request = { client, items: bucket, region, proposedTotal: Number(budget), note };
-    const problems = validateQuoteRequest(request, priced.total);
+    const request = { client, items: bucket, region, proposedTotal: Number(budget), note, acceptTerms };
+    const problems = [...validateQuoteRequest(request, priced.total), ...(acceptTerms ? [] : [TERMS_REQUIRED])];
     setErrors(problems);
     if (problems.length > 0) return;
     setIsBusy(true);
@@ -60,6 +62,7 @@ export function NegotiateForm({ onCancel, onNavigate }: { onCancel: () => void; 
         <div className="field"><label htmlFor="ng-co">Company <small>(optional)</small></label><input id="ng-co" className="input" autoComplete="organization" value={client.company} onChange={(e) => set("company")(e.target.value)} /></div>
       </div>
       <div className="field"><label htmlFor="ng-note">Anything we should know? <small>(optional)</small></label><textarea id="ng-note" className="input" rows={3} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Deadline, scope you could drop, a competing quote…" /></div>
+      <TermsCheckbox id="ng-terms" checked={acceptTerms} onChange={setAcceptTerms} isDark />
       {errors.length > 0 && <div className="error-box" role="alert">{errors.map((x) => <div key={x}>{x}</div>)}</div>}
       <div className="nego-actions">
         <button type="button" className="btn btn-plain nego-cancel" onClick={onCancel}>Cancel</button>

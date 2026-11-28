@@ -8,6 +8,7 @@ import { getRepository } from "@/lib/data";
 import { validateCustomRequest } from "@/lib/quotes";
 import type { Client, DepartmentId } from "@/lib/types";
 import { ArrowUpRight } from "../Icons";
+import { TERMS_REQUIRED, TermsCheckbox } from "../legal/TermsCheckbox";
 
 const EMPTY: Client = { name: "", company: "", email: "", whatsapp: "" };
 
@@ -22,14 +23,15 @@ export function CustomRequestForm() {
   const [timeline, setTimeline] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [isBusy, setIsBusy] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   useEffect(() => { const c = readClientMemory().client; if (c) setClient(c); }, []);
   const set = (k: keyof Client) => (v: string) => setClient((c) => ({ ...c, [k]: v }));
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const request = { client, title, description, departmentId, budget: budget.trim() === "" ? null : Number(budget), timeline, region: "intl" as const };
-    const problems = validateCustomRequest(request);
+    const request = { client, title, description, departmentId, budget: budget.trim() === "" ? null : Number(budget), timeline, region: "intl" as const, acceptTerms };
+    const problems = [...validateCustomRequest(request), ...(acceptTerms ? [] : [TERMS_REQUIRED])];
     setErrors(problems);
     if (problems.length > 0) return;
     setIsBusy(true);
@@ -70,6 +72,7 @@ export function CustomRequestForm() {
           <div className="field"><label htmlFor="cr-wa">WhatsApp</label><input id="cr-wa" className="input" type="tel" inputMode="tel" autoComplete="tel" placeholder="+263 77 123 4567" value={client.whatsapp} onChange={(e) => set("whatsapp")(e.target.value)} required /></div>
         </div>
       </section>
+      <TermsCheckbox id="cr-terms" checked={acceptTerms} onChange={setAcceptTerms} />
       {errors.length > 0 && <div className="error-box" role="alert">{errors.map((x) => <div key={x}>{x}</div>)}</div>}
       <button className="btn btn-dark cr-submit" type="submit" disabled={isBusy}><span>{isBusy ? "Sending…" : "Send request"}</span><span className="arrow"><ArrowUpRight size={16} /></span></button>
       <p className="hint">You&apos;ll get a private ticket page. We reply with a price there and on WhatsApp; accepting it creates your invoice.</p>
