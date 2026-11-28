@@ -10,6 +10,8 @@ type GateState = "checking" | "signed-in" | "signed-out";
 function PasswordGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<GateState>("checking");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [needsCode, setNeedsCode] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
 
@@ -26,9 +28,11 @@ function PasswordGate({ children }: { children: ReactNode }) {
     setIsBusy(true);
     setNote(null);
     try {
-      const res = await fetch("/api/ops/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      if (res.ok) { setPassword(""); setState("signed-in"); } else setNote(body.error ?? "Sign-in failed.");
+      const res = await fetch("/api/ops/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(needsCode ? { password, code } : { password }) });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; needsCode?: boolean };
+      if (res.ok) { setPassword(""); setCode(""); setState("signed-in"); return; }
+      if (body.needsCode) { setNeedsCode(true); setCode(""); setNote(needsCode ? body.error ?? "That code didn't match." : null); return; }
+      setNote(body.error ?? "Sign-in failed.");
     } catch {
       setNote("Can't reach the server. Try again.");
     } finally {
@@ -44,8 +48,17 @@ function PasswordGate({ children }: { children: ReactNode }) {
         <h1>Operator sign-in</h1>
         {state === "checking" ? <p className="hint-line">Checking session…</p> : (
           <>
-            <div className="field"><label htmlFor="g-pass">Password</label><input id="g-pass" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></div>
-            <button className="btn btn-lime" type="submit" disabled={isBusy} style={{ justifyContent: "center" }}>{isBusy ? "Signing in…" : "Sign in"}</button>
+            {!needsCode ? (
+              <div className="field"><label htmlFor="g-pass">Password</label><input id="g-pass" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required /></div>
+            ) : (
+              <div className="field">
+                <label htmlFor="g-code">6-digit code from your authenticator app</label>
+                <input id="g-code" className="input gate-code" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={11} placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} required />
+                <small className="hint-line">Lost your phone? Enter one of your recovery codes instead.</small>
+              </div>
+            )}
+            <button className="btn btn-lime" type="submit" disabled={isBusy} style={{ justifyContent: "center" }}>{isBusy ? "Checking…" : needsCode ? "Verify" : "Sign in"}</button>
+            {needsCode && <button type="button" className="linklike" onClick={() => { setNeedsCode(false); setCode(""); setNote(null); }}>Back</button>}
             {note && <p className="hint-line" role="alert">{note}</p>}
           </>
         )}

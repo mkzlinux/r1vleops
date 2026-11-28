@@ -9,6 +9,7 @@ import { EVM_CHAIN_IDS, USDC_CHAINS, USDC_CHAIN_IDS, type UsdcChain } from "@/li
 import { regionFromCountry } from "@/lib/pricing";
 import type { Region } from "@/lib/types";
 import { createPaymentService, type PaymentService } from "./paymentService";
+import { createMfaStore, type MfaStore } from "./mfaStore";
 import { paynowClient } from "./paynow";
 import { createQuoteStore, type QuoteStore } from "./quoteStore";
 import { StoreError, createSqlStore, type SqlStore } from "./sqlStore";
@@ -24,10 +25,10 @@ export class BackendNotConfigured extends Error {
   constructor(name: string) { super(`Server is missing ${name}.`); }
 }
 export class HttpError extends Error {
-  constructor(readonly status: number, message: string) { super(message); }
+  constructor(readonly status: number, message: string, readonly extra: Record<string, unknown> = {}) { super(message); }
 }
 
-interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService; quotes: QuoteStore }
+interface Backend { sql: SqlClient; store: SqlStore; r2: ReturnType<typeof r2Client>; payments: PaymentService; quotes: QuoteStore; mfa: MfaStore }
 let backend: Promise<Backend> | null = null;
 
 export function getBackend(): Promise<Backend> {
@@ -37,7 +38,7 @@ export function getBackend(): Promise<Backend> {
     const sql = d1HttpClient({ accountId, databaseId: env("CLOUDFLARE_D1_DATABASE_ID"), apiToken, apiBase: process.env.CLOUDFLARE_API_BASE });
     const r2 = r2Client({ accountId, bucket: process.env.R2_BUCKET || "r1vleops-order-files", accessKeyId: env("CLOUDFLARE_API_TOKEN_ID"), secretAccessKey: await r2SecretFromToken(apiToken) });
     const store = createSqlStore(sql, { blobs: r2.blobs });
-    return { sql, r2, store, payments: paymentServiceFor(store), quotes: createQuoteStore(sql, store) };
+    return { sql, r2, store, payments: paymentServiceFor(store), quotes: createQuoteStore(sql, store), mfa: createMfaStore(sql, process.env.OPS_SESSION_SECRET ?? "") };
   })().catch((err: unknown) => { backend = null; throw err; });
   return backend;
 }
@@ -93,7 +94,7 @@ export async function respond<T>(fn: () => Promise<T>, status = 200): Promise<Ne
   try {
     return NextResponse.json({ data: await fn() }, { status, headers: { "Cache-Control": "no-store" } });
   } catch (err: unknown) {
-    if (err instanceof HttpError) return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err instanceof HttpError) return NextResponse.json({ error: err.message, ...err.extra }, { status: err.status });
     if (err instanceof BackendNotConfigured) {
       console.error(err.message);
       return NextResponse.json({ error: "Ordering is temporarily unavailable. Please message us on WhatsApp." }, { status: 503 });

@@ -111,3 +111,13 @@ CREATE TABLE IF NOT EXISTS quotes (
   order_code TEXT
 );
 CREATE INDEX IF NOT EXISTS quotes_status ON quotes(status, created_at);
+
+-- Operator two-step sign-in (TOTP). Secrets are AES-GCM encrypted; recovery codes stored as SHA-256 hashes.
+CREATE TABLE IF NOT EXISTS ops_security (
+  id TEXT PRIMARY KEY CHECK (id = 'owner'),
+  totp_secret TEXT,
+  pending_secret TEXT,
+  last_step INTEGER NOT NULL DEFAULT 0,
+  recovery TEXT NOT NULL DEFAULT '[]',
+  enabled_at TEXT
+);

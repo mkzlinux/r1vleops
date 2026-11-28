@@ -231,3 +231,19 @@ textarea.g-input { min-height: 72px; resize: vertical; }
 .new-done-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .quick button { font-family: inherit; }
 @media (max-width: 1100px) { .new-grid { grid-template-columns: minmax(0, 1fr); } .new-summary { position: static; } }
+.gate-code { font-family: var(--font-mono); font-size: 24px !important; letter-spacing: 0.3em; text-align: center; }
+
+/* Settings: two-step sign-in */
+.mfa-panel { padding: 20px; }
+.mfa { display: grid; gap: 16px; }
+.mfa-head { display: flex; gap: 12px; align-items: flex-start; }
+.mfa-head b { font-size: 17px; }
+.mfa-setup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; padding: 16px; border-radius: 18px; background: var(--paper); }
+.mfa-setup img { border-radius: 12px; background: #fff; padding: 6px; }
+.mfa-steps { margin: 0 0 12px; padding-left: 18px; display: grid; gap: 8px; font-size: 14px; }
+.mfa-steps code { background: #fff; padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.mfa-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.mfa-row .g-input { max-width: 200px; }
+.mfa-codes { display: grid; gap: 12px; padding: 16px; border-radius: 18px; background: rgba(200, 245, 59, 0.25); }
+.mfa-codes ol { margin: 0; padding-left: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 20px; font-size: 16px; }
+@media (max-width: 760px) { .mfa-setup { grid-template-columns: 1fr; justify-items: center; } .mfa-codes ol { grid-template-columns: 1fr; } }

@@ -7,7 +7,7 @@ import { Chip, Coin, Film, Plus, Shield, Users } from "../Icons";
 import { Brand } from "../site/SiteChrome";
 import { OpsBackground } from "./OpsBackground";
 
-export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq" | "new";
+export type OpsNavId = "overview" | "security" | "intelligence" | "creative" | "deals" | "hq" | "new" | "settings";
 
 const NAV: readonly { id: OpsNavId; href: string; label: string; icon: ReactNode }[] = [
   { id: "overview", href: "/ops", label: "Overview", icon: <GridIcon /> },
@@ -24,6 +24,10 @@ function GridIcon() {
 
 function BellIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16Z" /><path d="M10 20a2 2 0 0 0 4 0" /></svg>;
+}
+
+function LockIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>;
 }
 
 function ExitIcon() {
@@ -55,6 +59,7 @@ export function OpsFrame({ active, alerts = 0, children }: OpsFrameProps) {
             <span className={`ops-mode${isLive ? " live" : ""}`}><i />{isLive ? "Live" : "Demo"}</span>
             <Link href="/ops/new" className={`ops-round${active === "new" ? " on" : ""}`} aria-label="New invoice or offer" title="New invoice or offer"><Plus size={18} /></Link>
             <Link href="/ops#requests" className="ops-round" aria-label={`${alerts} new requests`} title="New requests"><BellIcon />{alerts > 0 && <span className="ops-dot">{alerts}</span>}</Link>
+            <Link href="/ops/settings" className={`ops-round${active === "settings" ? " on" : ""}`} aria-label="Security settings" title="Security settings"><LockIcon /></Link>
             <Link href="/" className="ops-round hide-sm" aria-label="Public site" title="Public site"><ExitIcon /></Link>
             {isCloudflareBackend
               ? <button type="button" className="ops-avatar" title="Sign out" aria-label="Sign out" onClick={() => { fetch("/api/ops/logout", { method: "POST" }).finally(() => window.location.reload()); }}>R1</button>
