@@ -7,6 +7,7 @@ import { formatUsd } from "@/lib/orders";
 import { PAYNOW_CHANNELS, USDC_CHAINS, amountDue, payableKinds, usesTag, type Payment, type PaynowChannel, type UsdcChain } from "@/lib/payments";
 import type { Order } from "@/lib/types";
 import { ArrowUpRight, Check, Coin } from "../Icons";
+import { CardLogos, ChainLogo, PaynowMark, UsdcLogo } from "./PayLogos";
 
 const POLL_MS = { paynow: 5_000, usdc: 15_000 } as const;
 const MAX_POLLS = 80;
@@ -113,7 +114,7 @@ export function PayPanel({ order, onPaid, resumePaymentId }: { order: Order; onP
         )}
         {live.status === "pending" && isUsdc && c && (
           <>
-            <p className="pp-warn">Send <b>USDC</b> on <b>{c.network}</b> only. Other tokens or networks can&apos;t be recovered.{c.note ? ` ${c.note}` : ""}</p>
+            <p className="pp-warn"><span className="pp-net"><UsdcLogo size={16} /><ChainLogo chain={live.channel as UsdcChain} size={14} /></span>Send <b>USDC</b> on <b>{c.network}</b> only. Other tokens or networks can&apos;t be recovered.{c.note ? ` ${c.note}` : ""}</p>
             <CopyField label={hasTag ? "Amount (USDC)" : "Send exactly (USDC)"} value={live.payAmount ?? ""} isImportant />
             <CopyField label="To address" value={live.payTo ?? ""} />
             {hasTag && live.destinationTag !== null && <CopyField label={live.channel === "stellar" ? "Memo (required)" : "Destination tag (required)"} value={String(live.destinationTag)} isImportant />}
@@ -135,13 +136,13 @@ export function PayPanel({ order, onPaid, resumePaymentId }: { order: Order; onP
     <form className="pay-panel no-print" onSubmit={begin}>
       <header className="pp-head"><span className="pp-ico"><Coin size={18} /></span><h2>{title}</h2></header>
       <div className="pp-tabs" role="tablist" aria-label="Payment method">
-        {options.paynow && <button type="button" role="tab" aria-selected={tab === "paynow"} className={tab === "paynow" ? "on" : ""} onClick={() => setTab("paynow")}>Mobile money &amp; cards</button>}
-        {options.usdc.length > 0 && <button type="button" role="tab" aria-selected={tab === "usdc"} className={tab === "usdc" ? "on" : ""} onClick={() => setTab("usdc")}>USDC</button>}
+        {options.paynow && <button type="button" role="tab" aria-selected={tab === "paynow"} className={tab === "paynow" ? "on" : ""} onClick={() => setTab("paynow")}><span className="tab-in">Mobile money &amp; cards <CardLogos size={16} /></span></button>}
+        {options.usdc.length > 0 && <button type="button" role="tab" aria-selected={tab === "usdc"} className={tab === "usdc" ? "on" : ""} onClick={() => setTab("usdc")}><span className="tab-in"><UsdcLogo size={18} /> USDC</span></button>}
       </div>
       {tab === "paynow" ? (
         <>
           <div className="pp-chips" role="radiogroup" aria-label="Pay with">
-            {PAYNOW_CHANNELS.map((c) => <button key={c.id} type="button" role="radio" aria-checked={channel === c.id} className={channel === c.id ? "on" : ""} onClick={() => setChannel(c.id)}>{c.label}</button>)}
+            {PAYNOW_CHANNELS.map((c) => <button key={c.id} type="button" role="radio" aria-checked={channel === c.id} className={`logo-chip${channel === c.id ? " on" : ""}`} onClick={() => setChannel(c.id)} aria-label={c.label}><PaynowMark channel={c.id} /></button>)}
           </div>
           {options.paynowTest && (
             <p className="pp-test"><b>Test mode</b> · no real money moves. Test numbers: 0771111111 succeeds, 0772222222 succeeds after a delay, 0773333333 is cancelled, 0774444444 has insufficient funds.</p>
@@ -152,7 +153,7 @@ export function PayPanel({ order, onPaid, resumePaymentId }: { order: Order; onP
         </>
       ) : (
         <div className="pp-chips" role="radiogroup" aria-label="USDC network">
-          {options.usdc.map((id) => <button key={id} type="button" role="radio" aria-checked={chain === id} className={chain === id ? "on" : ""} onClick={() => setChain(id)}>{USDC_CHAINS[id].label}</button>)}
+          {options.usdc.map((id) => <button key={id} type="button" role="radio" aria-checked={chain === id} className={`logo-chip${chain === id ? " on" : ""}`} onClick={() => setChain(id)}><ChainLogo chain={id} />{USDC_CHAINS[id].label}</button>)}
         </div>
       )}
       {error && <div className="error-box" role="alert">{error}</div>}

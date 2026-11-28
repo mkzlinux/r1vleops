@@ -232,3 +232,30 @@
 .qv-custom h3 { margin: 6px 0 8px; font-size: 20px; letter-spacing: -0.02em; }
 .qv-custom p { margin: 0 0 8px; white-space: pre-wrap; font-size: 14.5px; }
 @media (max-width: 760px) { .cr-depts { grid-template-columns: 1fr; } }
+
+/* Payment logos */
+.logo-dot { display: inline-grid; place-items: center; flex: none; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(14, 15, 17, 0.08); }
+.logo-dot img, .logo-raw, .card-tile img { display: block; }
+.card-logos { display: inline-flex; gap: 4px; align-items: center; }
+.card-tile { display: inline-grid; place-items: center; background: #fff; border-radius: 5px; padding: 0 4px; height: 18px; box-shadow: 0 0 0 1px rgba(14, 15, 17, 0.1); }
+.card-tile img { height: 14px; width: auto; }
+.mm-mark { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: #fff; font-size: 12px; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); box-shadow: 0 0 0 1px rgba(14, 15, 17, 0.1); }
+.mm-ecocash { color: #0a58a5; }
+.mm-onemoney { color: #e5761c; }
+.mm-innbucks { color: #c4161c; }
+.pp-chips .logo-chip { display: inline-flex; align-items: center; gap: 8px; }
+.tab-in { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.pp-tabs .card-tile { height: 16px; }
+.pp-net { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; vertical-align: -3px; }
+.pay-methods .card-logos { margin-left: 2px; }
+.pay-methods .card-tile { height: 14px; box-shadow: none; padding: 0; }
+.pay-methods .card-tile img { height: 12px; }
+.accepts { display: grid; gap: 8px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.accepts.dark { border-top-color: rgba(255, 255, 255, 0.12); }
+.accepts small { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute); }
+.accepts.dark small { color: #8f8f8c; }
+.accepts-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.usdc-pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px 0 4px; border-radius: 999px; background: #fff; color: #2775ca; font-size: 12px; font-weight: 800; }
+.chain-stack { display: inline-flex; align-items: center; padding-left: 3px; }
+.chain-stack > span { margin-left: -3px; display: inline-flex; }
+@media print { .accepts { display: none; } }

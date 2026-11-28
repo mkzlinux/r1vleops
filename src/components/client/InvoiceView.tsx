@@ -10,6 +10,7 @@ import { isCloudflareBackend } from "@/lib/data";
 import { USDC_CHAINS, payableKinds, type UsdcChain } from "@/lib/payments";
 import { ArrowUpRight, Printer, WhatsApp } from "../Icons";
 import { PayPanel } from "./PayPanel";
+import { CardLogos, UsdcLogo } from "./PayLogos";
 
 const fmtDate = (iso: string): string => {
   const d = new Date(iso);
@@ -109,7 +110,7 @@ export function InvoiceView({ order, isNew, filesFailed = false, onPaid = () => 
           <div>
             <p className="label">04 / Payment</p>
             <div className="pay-methods">
-              {PAYMENT_METHODS.map((m) => <span key={m.id}>{m.label}{m.status !== "live" && <em>{m.status === "soon" ? "soon" : "on request"}</em>}</span>)}
+              {PAYMENT_METHODS.map((m) => <span key={m.id}>{m.id === "usdc" && <UsdcLogo size={14} />}{m.label}{m.id === "paynow" && <CardLogos size={14} />}{m.status !== "live" && <em>{m.status === "soon" ? "soon" : "on request"}</em>}</span>)}
             </div>
             <p className="sub" style={{ marginTop: 8 }}>{PAYMENT_NOTE} Use your invoice number as the payment reference.</p>
           </div>

@@ -36,27 +36,13 @@ export const PRIVACY: LegalDoc = {
       ],
     },
     {
-      heading: "3. Who processes it for us",
-      body: [
-        [
-          "Vercel Inc. (website hosting, United States).",
-          "Cloudflare Inc. (database and file storage).",
-          "Paynow Zimbabwe (payments you make through Paynow).",
-          "WhatsApp and our email provider (messages you send us).",
-          "Public blockchain networks (USDC transactions are public by design).",
-        ],
-        "Some of these providers store data outside Zimbabwe. We use providers with recognised security standards and contractual safeguards, and share only what each needs.",
-        "We may disclose information when the law requires it or to protect our legal rights.",
-      ],
-    },
-    {
-      heading: "4. On your device",
+      heading: "3. On your device",
       body: [
         "This site stores your contact details, bucket and tracking codes in your browser's local storage so you don't retype them. You can clear them by clearing site data. We don't use advertising or analytics cookies. The operator sign-in uses one secure cookie, only for our staff.",
       ],
     },
     {
-      heading: "5. How long we keep it",
+      heading: "4. How long we keep it",
       body: [
         [
           "Invoices, payments and order records: at least 6 years, for tax and accounting.",
@@ -67,24 +53,24 @@ export const PRIVACY: LegalDoc = {
       ],
     },
     {
-      heading: "6. Security",
+      heading: "5. Security",
       body: [
-        "Data is encrypted in transit, files are stored privately and shared only through short-lived links, operator access is protected by passwords and two-step verification, and requests are rate-limited. No system is perfectly secure; if a breach affects your information, we will tell you and the regulator as the law requires.",
+        "Data is encrypted in transit, files are stored privately and shared only through short-lived links, operator access is protected by passwords and two-step verification, and requests are rate-limited. Our hosting, storage and payment providers may keep data outside Zimbabwe, under recognised security standards. We share with them only what each needs, and disclose information only when the law requires it or to protect our legal rights. No system is perfectly secure; if a breach affects your information, we will tell you and the regulator as the law requires.",
       ],
     },
     {
-      heading: "7. Your rights",
+      heading: "6. Your rights",
       body: [
         "You may ask to see the information we hold about you, correct it, delete it (unless we must keep it by law), object to or restrict how we use it, or get a copy to take elsewhere.",
         `Email ${COMPANY.email} from the address you used with us. We reply within 30 days. If you're not satisfied, you can complain to the Postal and Telecommunications Regulatory Authority of Zimbabwe (POTRAZ), the Data Protection Authority, or the regulator where you live.`,
       ],
     },
     {
-      heading: "8. Children",
+      heading: "7. Children",
       body: ["Our services are for businesses and adults. We don't knowingly collect information from anyone under 18."],
     },
     {
-      heading: "9. Changes",
+      heading: "8. Changes",
       body: ["We'll post any changes here with a new effective date. Significant changes affecting current clients will be communicated directly."],
     },
   ],

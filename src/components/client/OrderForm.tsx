@@ -12,6 +12,10 @@ import type { Client } from "@/lib/types";
 import { useBucket } from "../bucket/BucketProvider";
 import { ArrowUpRight, BucketIcon, Close, Upload } from "../Icons";
 import { TERMS_REQUIRED, TermsCheckbox } from "../legal/TermsCheckbox";
+import { AcceptedPayments } from "./PayLogos";
+import { isCloudflareBackend } from "@/lib/data";
+import { getPaymentOptions } from "@/lib/data/paymentsApi";
+import { EVM_CHAIN_IDS, type UsdcChain } from "@/lib/payments";
 
 const EMPTY_CLIENT: Client = { name: "", company: "", email: "", whatsapp: "" };
 const ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.svg,.heic,.pdf,.ai,.eps,.psd,.fig,.zip,.txt,.doc,.docx,.ppt,.pptx";
@@ -74,6 +78,13 @@ export function OrderForm() {
   const [status, setStatus] = useState<"idle" | "placing" | "uploading">("idle");
   const [returningName, setReturningName] = useState<string | null>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [chains, setChains] = useState<readonly UsdcChain[]>(EVM_CHAIN_IDS);
+  useEffect(() => {
+    if (!isCloudflareBackend) return;
+    let isLive = true;
+    getPaymentOptions().then((o) => { if (isLive && o.usdc.length) setChains(o.usdc); }).catch(() => undefined);
+    return () => { isLive = false; };
+  }, []);
 
   // Returning client on this device: pre-fill their details (records themselves are keyed by email).
   useEffect(() => {
@@ -170,6 +181,7 @@ export function OrderForm() {
         <button className="btn btn-lime" type="submit" disabled={status !== "idle"}>
           <span>{status === "placing" ? "Generating invoice…" : status === "uploading" ? "Uploading files…" : "Place order & get invoice"}</span><span className="arrow"><ArrowUpRight size={16} /></span>
         </button>
+        <AcceptedPayments chains={chains} isDark />
       </aside>
     </form>
   );
